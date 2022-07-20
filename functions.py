@@ -6,6 +6,15 @@ import matplotlib.pyplot as plt
 from skimage.registration import phase_cross_correlation
 import tifffile as tiff
 
+def calculate_shift(image1, image2):
+	shift, error, diffphase = phase_cross_correlation(image1, image2)
+	print(f'Shift, Error, diffphase : {shift, error, diffphase}')
+
+	return shift, error, diffphase
+
+#def create_new_image(filepath, tileDimensions):
+#	image = Image.open(filepath)
+
 def listNameOfFiles(directory: str, extension="tif") -> list:
 	"""
 	Fetch files name. 
@@ -23,13 +32,17 @@ def listNameOfFiles(directory: str, extension="tif") -> list:
 	foundFiles.sort()
 	return foundFiles
 
-def read_file(file_path):
+def read_file(filePath, imageType):
 	"""
 	Reads the .tif file and convert them in a np.array. 
 	Returns the file as a np.array. 
 	"""
-	image_array = tiff.imread(file_path)
-	return image_array
+	if imageType == "numpy":
+		image = tiff.imread(filePath)
+	if imageType == "PIL":
+		image = Image.open(filePath)
+
+	return image
 
 def merge_images_sidebyside(image1, image2):
     """Merge two images into one, displayed side by side
@@ -49,15 +62,6 @@ def merge_images_sidebyside(image1, image2):
     result.paste(im=image2, box=(width1, 0))
     
     return result
-
-#def create_new_image(filepath, tileDimensions):
-#	image = Image.open(filepath)
-
-def calculate_shift(image1, image2):
-	shift, error, diffphase = phase_cross_correlation(image1, image2)
-	print(f'Shift, Error, diffphase : {shift, error, diffphase}')
-
-	return shift, error, diffphase
 
 
 
