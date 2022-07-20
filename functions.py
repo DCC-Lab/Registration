@@ -1,6 +1,10 @@
 import os
 import fnmatch
 from PIL import Image
+import numpy as np
+import matplotlib.pyplot as plt
+from skimage.registration import phase_cross_correlation
+import tifffile as tiff
 
 def listNameOfFiles(directory: str, extension="tif") -> list:
 	"""
@@ -27,14 +31,12 @@ def read_file(file_path):
 	image_array = tiff.imread(file_path)
 	return image_array
 
-def merge_images(file1, file2):
+def merge_images_sidebyside(image1, image2):
     """Merge two images into one, displayed side by side
     :param file1: path to first image file
     :param file2: path to second image file
     :return: the merged Image object
     """
-    image1 = Image.open(file1)
-    image2 = Image.open(file2)
 
     (width1, height1) = image1.size
     (width2, height2) = image2.size
@@ -47,3 +49,17 @@ def merge_images(file1, file2):
     result.paste(im=image2, box=(width1, 0))
     
     return result
+
+#def create_new_image(filepath, tileDimensions):
+#	image = Image.open(filepath)
+
+def calculate_shift(image1, image2):
+	shift, error, diffphase = phase_cross_correlation(image1, image2)
+	print(f'Shift, Error, diffphase : {shift, error, diffphase}')
+
+	return shift, error, diffphase
+
+
+
+
+
