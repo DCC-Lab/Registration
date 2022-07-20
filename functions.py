@@ -32,18 +32,6 @@ def listNameOfFiles(directory: str, extension="tif") -> list:
 	foundFiles.sort()
 	return foundFiles
 
-def read_file(filePath, imageType):
-	"""
-	Reads the .tif file and convert them in a np.array. 
-	Returns the file as a np.array. 
-	"""
-	if imageType == "numpy":
-		image = tiff.imread(filePath)
-	if imageType == "PIL":
-		image = Image.open(filePath)
-
-	return image
-
 def merge_images_sidebyside(image1, image2):
     """Merge two images into one, displayed side by side
     :param file1: path to first image file
@@ -62,6 +50,18 @@ def merge_images_sidebyside(image1, image2):
     result.paste(im=image2, box=(width1, 0))
     
     return result
+
+def read_file(filePath, imageType):
+	"""
+	Reads the .tif file and convert them in a np.array. 
+	Returns the file as a np.array. 
+	"""
+	if imageType == "numpy":
+		image = tiff.imread(filePath)
+	if imageType == "PIL":
+		image = Image.open(filePath)
+
+	return image
 
 
 
