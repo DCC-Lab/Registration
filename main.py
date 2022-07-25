@@ -20,9 +20,6 @@ imagePIL1 = read_file(filePath=sourcePath + "/" + files[1], imageType="PIL")
 imagePIL2 = read_file(filePath=sourcePath + "/" + files[2], imageType="PIL")
 imagePIL3 = read_file(filePath=sourcePath + "/" + files[3], imageType="PIL")
 
-backgroundImage = create_background_image(tile=tileDimensions, shift=manualShift)
-width, height = backgroundImage.size
+backgroundImage = create_tile_image(tile=tileDimensions, shift=manualShift)
+# width, height = backgroundImage.size
 backgroundImage.save(fp="/Users/valeriepineaunoel/Desktop/backgroundImage.tif")
-
-
-#stitchedImage.save(fp="stitchedImage.tif")

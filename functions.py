@@ -8,8 +8,11 @@ import tifffile as tiff
 
 def calculate_shift_PCC(image1, image2):
 	"""
-	Takes two overlapped image in input and calculates the spacial shift of the second image according to the first image with phase cross-correlation.
-	Returns a list corresponding to the shift [weight,height], where a positive height corresponds to a shift to the bottom and a positive weight corresponds to a shift to the right.
+	Takes two in np.arrays and calculates the spacial shift of the second np.array according 
+	to the first np.array with phase cross-correlation.
+	Returns a list corresponding to the shift [weight,height], where a positive height 
+	corresponds to a shift to the bottom and a positive weight corresponds to a shift to the 
+	right.
 	"""
 	reverseShift, error, diffphase = phase_cross_correlation(image1, image2)
 	#print(f'Shift, Error, diffphase : {shift, error, diffphase}')
@@ -17,10 +20,11 @@ def calculate_shift_PCC(image1, image2):
 
 	return shift
 
-def create_background_image(tile:list, shift:list, imageSize=[1024,512]):
+def create_tile_image(tile:list, shift:list, imageSize=[1024,512]):
 	"""
-	Creates a black PIL image of the size of the tile.  
-	Returns a black PIL image. 
+	Calculates the size of the tile image. 
+	Creates a 8-bit black PIL image of the size of the tile.  
+	Returns a 8-bit black PIL image. 
 	"""
 	weight = imageSize[0] + (abs(shift[0]) * (tile[0]-1))
 	height = imageSize[1] + (abs(shift[1]) * (tile[1]-1))
@@ -48,10 +52,9 @@ def listNameOfFiles(directory: str, extension="tif") -> list:
 	return foundFiles
 
 def merge_images_sidebyside(image1, image2):
-    """Merge two images into one, displayed side by side
-    :param file1: path to first image file
-    :param file2: path to second image file
-    :return: the merged Image object
+    """
+    Merge two images into one, displayed side by side.
+    Returns the merged image object.
     """
 
     (width1, height1) = image1.size
@@ -68,8 +71,8 @@ def merge_images_sidebyside(image1, image2):
 
 def read_file(filePath, imageType):
 	"""
-	Reads the .tif file and convert them in a np.array. 
-	Returns the file as a np.array. 
+	Reads the .tif file and convert them in a np.array or PIL image. 
+	Returns the image in the right format. 
 	"""
 	if imageType == "numpy":
 		image = tiff.imread(filePath)
