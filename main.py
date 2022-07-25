@@ -2,7 +2,7 @@ from functions import *
 
 sourcePath = "/Users/valeriepineaunoel/Desktop/test"
 files = listNameOfFiles(directory=sourcePath)
-tileDimensions = [2, 2]
+tileDimensions = [2, 3]
 # [x,y]. Positive y = going down. Positive x = going right. When comparing image2 with image1 : 
 verticalShift = [-39, 384]
 horizontalShift = [-169, -12]
@@ -20,6 +20,9 @@ imagePIL1 = read_file(filePath=sourcePath + "/" + files[1], imageType="PIL")
 imagePIL2 = read_file(filePath=sourcePath + "/" + files[2], imageType="PIL")
 imagePIL3 = read_file(filePath=sourcePath + "/" + files[3], imageType="PIL")
 
-backgroundImage = create_tile_image(tile=tileDimensions, shift=manualShift)
+backgroundImage = create_tile_image(tileD=tileDimensions, hShift=horizontalShift, vShift=verticalShift)
 # width, height = backgroundImage.size
 backgroundImage.save(fp="/Users/valeriepineaunoel/Desktop/backgroundImage.tif")
+
+stitchedImage = stitching_scrapbooking(tileD=tileDimensions, image=imagePIL0, tile=backgroundImage, vShift=verticalShift, hShift=horizontalShift)
+stitchedImage.save(fp="/Users/valeriepineaunoel/Desktop/tile.tif")
