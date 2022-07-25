@@ -20,14 +20,14 @@ def calculate_shift_PCC(image1, image2):
 
 	return shift
 
-def create_tile_image(tile:list, shift:list, imageSize=[1024,512]):
+def create_tile_image(tile:list, vShift:list, hShift:list, imageSize=[1024,512]):
 	"""
 	Calculates the size of the tile image. 
 	Creates a 8-bit black PIL image of the size of the tile.  
 	Returns a 8-bit black PIL image. 
 	"""
-	weight = imageSize[0] + (abs(shift[0]) * (tile[0]-1))
-	height = imageSize[1] + (abs(shift[1]) * (tile[1]-1))
+	weight = imageSize[0] + (abs(hShift[0]) * (tile[0]-1)) + abs(vShift[0])
+	height = imageSize[1] + (abs(vShift[1]) * (tile[1]-1)) + abs(hShift[1])
 	blackImageSize = [weight, height]
 	
 	newImage = Image.new(mode="L", size=blackImageSize)
