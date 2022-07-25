@@ -6,14 +6,29 @@ import matplotlib.pyplot as plt
 from skimage.registration import phase_cross_correlation
 import tifffile as tiff
 
-def calculate_shift(image1, image2):
-	shift, error, diffphase = phase_cross_correlation(image1, image2)
-	print(f'Shift, Error, diffphase : {shift, error, diffphase}')
+def calculate_shift_PCC(image1, image2):
+	"""
+	Takes two overlapped image in input and calculates the spacial shift of the second image according to the first image with phase cross-correlation.
+	Returns a list corresponding to the shift [weight,height], where a positive height corresponds to a shift to the bottom and a positive weight corresponds to a shift to the right.
+	"""
+	reverseShift, error, diffphase = phase_cross_correlation(image1, image2)
+	#print(f'Shift, Error, diffphase : {shift, error, diffphase}')
+	shift = [reverseShift[1], reverseShift[0]]
 
-	return shift, error, diffphase
+	return shift
 
-#def create_new_image(filepath, tileDimensions):
-#	image = Image.open(filepath)
+def create_background_image(tile:list, shift:list, imageSize=[1024,512]):
+	"""
+	Creates a black PIL image of the size of the tile.  
+	Returns a black PIL image. 
+	"""
+	weight = imageSize[0] + (abs(shift[0]) * (tile[0]-1))
+	height = imageSize[1] + (abs(shift[1]) * (tile[1]-1))
+	blackImageSize = [weight, height]
+	
+	newImage = Image.new(mode="L", size=blackImageSize)
+
+	return newImage
 
 def listNameOfFiles(directory: str, extension="tif") -> list:
 	"""
