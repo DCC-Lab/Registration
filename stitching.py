@@ -1,21 +1,21 @@
-from PIL import ImageOps
+from PIL import ImageOps, Image
 import matplotlib.pyplot as plt
 from skimage.registration import phase_cross_correlation
 import tifffile as tiff
 import filesManagement as fman
 
 class Stitching:
-	def __init__(sourceDir, tileD:list, imageSize:list, vShift:list, hShift:list):
+	def __init__(self, sourceDir:str, tileD:list, imageSize:list, vShift:list, hShift:list):
 		self.sourceDir = sourceDir
 		self.tileD = tileD
 		self.vShift = vShift
 		self.hShift = hShift
 		self.imageSize = imageSize
 
-		self.files = fman.listNameOfFiles(directory=sourceD)
+		self.files = fman.listNameOfFiles(directory=sourceDir)
 
 
-	def calculate_shift_PCC(index1:int, index2:int):
+	def calculate_shift_PCC(self, index1:int, index2:int) -> list:
 		"""
 		Input the indexes of two images in a set.
 		Calculates the spatial shift between two images using the phase cross-correlation.
@@ -23,8 +23,8 @@ class Stitching:
 		corresponds to a shift to the bottom and a positive weight corresponds to a shift to the 
 		right.
 		"""
-		image1 = read_file(filePath=self.sourceDir + "/" + self.files[index1], imageType="numpy")
-		image2 = read_file(filePath=self.sourceDir + "/" + self.files[index2], imageType="numpy")
+		image1 = fman.read_file(filePath=self.sourceDir + "/" + self.files[index1], imageType="numpy")
+		image2 = fman.read_file(filePath=self.sourceDir + "/" + self.files[index2], imageType="numpy")
 
 		reverseShift, error, diffphase = phase_cross_correlation(image1, image2)
 		#print(f'Shift, Error, diffphase : {shift, error, diffphase}')
@@ -32,7 +32,7 @@ class Stitching:
 	
 		return shift
 
-	def create_tile_image():
+	def create_tile_image(self):
 		"""
 		Calculates the size of the tile image. 
 		Creates a 8-bit black PIL image of the size of the tile.  
@@ -46,14 +46,14 @@ class Stitching:
 	
 		return newImage
 	
-	def merge_images_sidebyside(index1:int, index2:int):
+	def merge_images_sidebyside(self, index1:int, index2:int):
 	    """
 	    Input the indexes of two images in a set. 
 	    Merge two images into one, displayed side by side.
 	    Returns the merged image object.
 	    """
-	    image1 = read_file(filePath=self.sourceDir + "/" + self.files[index1], imageType="PIL", mirror=True)
-	    image2 = read_file(filePath=self.sourceDir + "/" + self.files[index2], imageType="PIL", mirror=True)
+	    image1 = fman.read_file(filePath=self.sourceDir + "/" + self.files[index1], imageType="PIL", mirror=True)
+	    image2 = fman.read_file(filePath=self.sourceDir + "/" + self.files[index2], imageType="PIL", mirror=True)
 	
 	    (width1, height1) = image1.size
 	    (width2, height2) = image2.size
@@ -67,7 +67,7 @@ class Stitching:
 	    
 	    return result
 	
-	def stitching_scrapbooking_allImages():
+	def stitching_scrapbooking_allImages(self):
 		""" 
 		Creates the background tile image of the right size. 
 		For all images of the list of files : 
@@ -76,7 +76,7 @@ class Stitching:
 			Pastes the image on the background tile image. 
 		Returns the tile image with all the images pasted on it. 
 		"""
-		tile = create_tile_image()
+		tile = self.create_tile_image()
 
 		i = 0
 		coordinates = [0,0] # [width,height]
@@ -84,12 +84,12 @@ class Stitching:
 		while coordinates[1] < self.tileD[1]: # colonnes, y
 			row = 1
 			coordinates[0] = 0
-			while coordinates[0] < self.tileD[0] : # rangées, x
-				x = (coordinates[0] * self.imageSize[0]) - (coordinates[0] * (self.imageSize[0] - self.hShift[0]))
-				y = (coordinates[1] * self.imageSize[1]) - (hShift[1] * (self.tileD - row))
-				print(f"coordinates [x,y] of top image : {x} and {y}")
+			while coordinates[0] < self.tileD[0]: # rangées, x
+				x = (coordinates[1]*self.vShift[0]) + (coordinates[0]*self.hShift[0])
+				y = ((self.tileD[0]-row)*abs(self.hShift[1])) + (coordinates[1]*self.vShift[1])
+				print(f"coordinates [x,y] of image : {x} and {y}")
 	
-				image = fman.read_file(filePath=self.sourceDir + "/" + files[i], imageType="PIL", mirror=True)
+				image = fman.read_file(filePath=self.sourceDir + "/" + self.files[i], imageType="PIL", mirror=True)
 				tile.paste(image, (x,y))
 				coordinates[0] += 1
 				row += 1

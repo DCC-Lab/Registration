@@ -1,6 +1,6 @@
 import os
 import fnmatch
-from PIL import Image
+from PIL import Image, ImageOps
 import numpy as np
 
 def listNameOfFiles(directory: str, extension="tif") -> list:

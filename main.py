@@ -3,8 +3,8 @@ from stitching import *
 sourcePath = "/Users/valeriepineaunoel/Desktop/test"
 tileDimensions = [2, 3]
 # [x,y]. Positive y = going down. Positive x = going right. When comparing image2 with image1 : 
-verticalShift = [39, 384]
-horizontalShift = [169, -12]
+verticalShift = [47, 363]
+horizontalShift = [163, -12]
 
 print(sourcePath)
 
