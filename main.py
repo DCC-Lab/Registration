@@ -4,8 +4,8 @@ sourcePath = "/Users/valeriepineaunoel/Desktop/test"
 files = listNameOfFiles(directory=sourcePath)
 tileDimensions = [2, 3]
 # [x,y]. Positive y = going down. Positive x = going right. When comparing image2 with image1 : 
-verticalShift = [-39, 384]
-horizontalShift = [-169, -12]
+verticalShift = [39, 384]
+horizontalShift = [169, -12]
 
 # initialize images in numpy arrays
 imagenp0 = read_file(filePath=sourcePath + "/" + files[0], imageType="numpy")
@@ -15,10 +15,10 @@ imagenp2 = read_file(filePath=sourcePath + "/" + files[2], imageType="numpy")
 imagenp3 = read_file(filePath=sourcePath + "/" + files[3], imageType="numpy")
 
 # initialise images as pillow images
-imagePIL0 = read_file(filePath=sourcePath + "/" + files[0], imageType="PIL")
-imagePIL1 = read_file(filePath=sourcePath + "/" + files[1], imageType="PIL")
-imagePIL2 = read_file(filePath=sourcePath + "/" + files[2], imageType="PIL")
-imagePIL3 = read_file(filePath=sourcePath + "/" + files[3], imageType="PIL")
+imagePIL0 = read_file(filePath=sourcePath + "/" + files[0], imageType="PIL", mirror=True)
+imagePIL1 = read_file(filePath=sourcePath + "/" + files[1], imageType="PIL", mirror=True)
+imagePIL2 = read_file(filePath=sourcePath + "/" + files[2], imageType="PIL", mirror=True)
+imagePIL3 = read_file(filePath=sourcePath + "/" + files[3], imageType="PIL", mirror=True)
 
 backgroundImage = create_tile_image(tileD=tileDimensions, hShift=horizontalShift, vShift=verticalShift)
 # width, height = backgroundImage.size

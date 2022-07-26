@@ -1,6 +1,6 @@
 import os
 import fnmatch
-from PIL import Image
+from PIL import Image, ImageOps
 import numpy as np
 import matplotlib.pyplot as plt
 from skimage.registration import phase_cross_correlation
@@ -70,7 +70,7 @@ def merge_images_sidebyside(image1, image2):
     
     return result
 
-def read_file(filePath, imageType):
+def read_file(filePath, imageType, mirror=False):
 	"""
 	Reads the .tif file and convert them in a np.array or PIL image. 
 	Returns the image in the right format. 
@@ -79,6 +79,8 @@ def read_file(filePath, imageType):
 		image = tiff.imread(filePath)
 	if imageType == "PIL":
 		image = Image.open(filePath)
+	if mirror == True:
+		image = ImageOps.mirror(image)
 
 	return image
 
@@ -89,7 +91,6 @@ def stitching_scrapbooking(tileD:list, image, tile, vShift:list, hShift:list):
 	column = tileD[0] # 2, x
 	row = tileD[1] # 3, y
  
- 	while coordin
 	# x position
 	x = tile.size[0] - ((coordinates[0]+1) * image.size[0])
 	if vShift[0] > 0:
