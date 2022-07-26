@@ -3,6 +3,17 @@ import fnmatch
 from PIL import Image, ImageOps
 import numpy as np
 
+
+def createNewDirectory(directory: str, newFileName: str):
+	"""
+	Create new folder. 
+	Returns the path of the new folder. 
+	"""
+	newDir = directory+"/"+newFileName
+	if not os.path.exists(newDir):
+		os.makedirs(newDir)
+	return newDir
+	
 def listNameOfFiles(directory: str, extension="tif") -> list:
 	"""
 	Fetch files name. 
