@@ -1,16 +1,17 @@
 import filesManagement as fman
 import numpy as np
 import scipy.ndimage as simg
+import tifffile as tiff
 
 class ImageTreatment:
 	def __init__(self, sourceDir:str):
 		self.sourceDir = sourceDir
 
-		self.files = fman.listNameOfFiles(directory=sourceDir)
+		self.files = fman.list_name_of_files(directory=sourceDir)
 
 	def adjust_intensity(self, image, correction):
 		""" 
-		Takes an image and multiplies each pixels by the correcponding pixel in the correction image. 
+		Takes an image and multiplies each pixels by the corresponding pixel in the correction image. 
 		Returns the image corrected in intensity. 
 		"""
 		image = image.astype(np.float64)
@@ -24,7 +25,7 @@ class ImageTreatment:
 			y = 0
 			x += 1
 
-		new8bitImage = np.uint8(rescaleImage(image))
+		new8bitImage = np.uint8(self.rescale_image(image))
 
 		# adjust the background for better contrast. Here the background is defined as any pixel under 20. 
 		x = 0
@@ -49,15 +50,15 @@ class ImageTreatment:
 		aveImage = self.create_average_image()
 		correctionImage = self.create_intensity_correction_image(image=aveImage)
 
-		pathAfterCorrection = fman.create_new_directory(directory=sourceDir, newFileName="IntensityCorrection")
+		pathAfterCorrection = fman.create_new_directory(directory=self.sourceDir, newFileName="IntensityCorrection")
 		
 		for file in self.files:
-			image = fman.read_file(filePath=self.sourceDir + "/" + self.files[file], imageType="numpy")
+			image = fman.read_file(filePath=self.sourceDir + "/" + file, imageType="numpy")
 			correctedImage = self.adjust_intensity(image=image, correction=correctionImage)
 			newFileName = pathAfterCorrection + "/" + "ADJ" + file 
 			tiff.imwrite(newFileName, correctedImage)
 
-		correctedFiles = fman.listNameOfFiles(directory=sourceDir)
+		correctedFiles = fman.list_name_of_files(directory=pathAfterCorrection)
 
 		return pathAfterCorrection, correctedFiles
 
@@ -67,7 +68,7 @@ class ImageTreatment:
 		With the image directory, averages them all to produce a final image for correction. 
 		Returns the resultant average image. 
 		"""
-		pixels = self.sum_pixels(directory=self.sourceDir, filesName=self.files)
+		pixels = self.sum_pixels()
 		numberOfImages = len(self.files)
 
 		x = 0
@@ -153,13 +154,14 @@ class ImageTreatment:
 		Returns an image with the sum of all pixels. 
 		"""
 		firstPath = self.sourceDir + "/" + self.files[0]
-		firstImage = fman.read_file(file_path=firstPath, imageType="numpy")
+		firstImage = fman.read_file(filePath=firstPath, imageType="numpy")
 
 		pixels = np.zeros(shape=(firstImage.shape[0], firstImage.shape[1]), dtype=np.float64)
 
+		i = 0
 		for name in self.files:
-			filePath = self.sourceDir + "/" + name
-			image = fman.read_file(filePath=self.sourceDir + "/" + self.files[name], imageType="numpy")
+			#filePath = self.sourceDir + "/" + name
+			image = fman.read_file(filePath=self.sourceDir + "/" + name, imageType="numpy")
 			x = 0
 			y = 0
 			while x < firstImage.shape[0]:
@@ -168,6 +170,7 @@ class ImageTreatment:
 					y += 1
 				y = 0
 				x += 1
+			i += 1
 
 		return pixels
 

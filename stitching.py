@@ -1,19 +1,22 @@
 from PIL import ImageOps, Image
 import matplotlib.pyplot as plt
+import numpy as np
 from skimage.registration import phase_cross_correlation
 import tifffile as tiff
-import filesManagement as fman
 
-class Stitching:
+import filesManagement as fman
+from imageTreatment import *
+#from typing import *
+
+class Stitching(ImageTreatment):
 	def __init__(self, sourceDir:str, tileD:list, imageSize:list, vShift:list, hShift:list):
-		self.sourceDir = sourceDir
+		super().__init__(sourceDir=sourceDir)
 		self.tileD = tileD
 		self.vShift = vShift
 		self.hShift = hShift
 		self.imageSize = imageSize
 
-		self.files = fman.listNameOfFiles(directory=sourceDir)
-
+		#self.files = fman.listNameOfFiles(directory=sourceDir)
 
 	def calculate_shift_PCC(self, index1:int, index2:int) -> list:
 		"""
@@ -67,7 +70,7 @@ class Stitching:
 	    
 	    return result
 	
-	def stitching_scrapbooking_allImages(self):
+	def stitching_scrapbooking_allImages(self, correction=False):
 		""" 
 		Creates the background tile image of the right size. 
 		For all images of the list of files : 
@@ -77,6 +80,12 @@ class Stitching:
 		Returns the tile image with all the images pasted on it. 
 		"""
 		tile = self.create_tile_image()
+
+		if correction == True:
+			directory, listImages = self.correct_intensity_envelop()
+		else:
+			directory = self.sourceDir
+			listImages = self.files
 
 		i = 0
 		coordinates = [0,0] # [width,height]
@@ -89,7 +98,7 @@ class Stitching:
 				y = ((self.tileD[0]-row)*abs(self.hShift[1])) + (coordinates[1]*self.vShift[1])
 				print(f"coordinates [x,y] of image : {x} and {y}")
 	
-				image = fman.read_file(filePath=self.sourceDir + "/" + self.files[i], imageType="PIL", mirror=True)
+				image = fman.read_file(filePath=directory + "/" + listImages[i], imageType="PIL", mirror=True)
 				tile.paste(image, (x,y))
 				coordinates[0] += 1
 				row += 1

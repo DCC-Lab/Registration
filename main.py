@@ -9,5 +9,5 @@ horizontalShift = [163, -12]
 print(sourcePath)
 
 stitch = Stitching(sourceDir=sourcePath, tileD=tileDimensions, imageSize=[1024,512], vShift=verticalShift, hShift=horizontalShift)
-stitchedImage = stitch.stitching_scrapbooking_allImages()
+stitchedImage = stitch.stitching_scrapbooking_allImages(correction=True)
 stitchedImage.save(fp="/Users/valeriepineaunoel/Desktop/stitchedImage.tiff")
