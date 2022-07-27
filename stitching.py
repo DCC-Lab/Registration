@@ -29,6 +29,7 @@ class Stitching(ImageTreatment):
 
 		image1 = fman.read_file(filePath=directory + "/" + allImages[index1], imageType="numpy")
 		image2 = fman.read_file(filePath=directory + "/" + allImages[index2], imageType="numpy")
+		print(allImages[index1], allImages[index2])
 
 		reverseShift, error, disphase = phase_cross_correlation(reference_image=image1, moving_image=image2)
 		shift = [reverseShift[1], reverseShift[0]]
