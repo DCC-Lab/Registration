@@ -141,30 +141,35 @@ class Stitching(ImageTreatment):
 		image = fman.read_file(filePath=self.directory + "/" + self.files[0], imageType="PIL", mirror=True)
 		tile.paste(image, firstImageCoordinates)
 
-		coordinates = [1,0] # [width,height]
+		position = [1,0] # [width,height]
 		i = 1
 
-		# all the other images after the first one only need one shift coordinate compared to a reference 
-		# neighbouring image. 
-		while coordinates[1] < self.tileD[1]: # colonnes, y
-			coordinates[0] = 0
-			while coordinates[0] < self.tileD[0]: # rangées, x
+		# keeps track of the coordinates of the first image of the row (vCoordinates) and of the previous image (hCoordinates)
+		vCoordinates = firstImageCoordinates
+		hCoordinates = firstImagesCoordinates
+
+		while position[1] < self.tileD[1]: # colonnes, y
+			while position[0] < self.tileD[0]: # rangées, x
 				# if first image of the row, use the image on top to calculate the shift
-				if coordinates[0] == 0:
+				if position[0] == 0:
 					shift = self.calculate_shift_PCC(index1=i-tileD[0], index2=i)
+					coordinates = [a + b for a, b in zip(vCoordinates, shift)]
+					hCoordinates = coordinates
+					vCoordinates = coordinates
 				# if not first image of the row, use the previous image to calcualte the shift
 				else:
 					shift = self.calculate_shift_PCC(index1=i-1, index2=i)
-
-				# CALCULER LES COORDONNÉES
+					coordinates = [a + b for a, b in zip(hCoordinates, shift)]
+					hCoordinates = coordinates
 
 				image = fman.read_file(filePath=self.directory + "/" + self.files[i], imageType="PIL", mirror=True)
-				tile.paste(image, shift)
-				print(f"coordinates [x,y] of image : {shift}")
+				tile.paste(image, coordinates)
+				print(f"shift and coordinates [x,y] of image : {shift} and {coordinates}")
 	
 				coordinates[0] += 1
 				i += 1
 			coordinates[1] += 1
+			coordinates[0] = 0
 	
 		return tile
 	
