@@ -10,7 +10,7 @@ from imageTreatment import *
 #from typing import *
 
 class Stitching(ImageTreatment):
-	def __init__(self, sourceDir:str, tileD:list, imageSize:list, vShift:list, hShift:list, intensityCorrection:bool = False):
+	def __init__(self, sourceDir:str, tileD:list, imageSize:list, intensityCorrection:bool = False):
 		super().__init__(sourceDir=sourceDir)
 		if intensityCorrection == True:
 			# the directory we are interested in is actually the one with intensity correction images. 
@@ -19,11 +19,12 @@ class Stitching(ImageTreatment):
 			self.directory = self.sourceDir
 
 		self.tileD = tileD
-		self.vShift = vShift
-		self.hShift = hShift
 		self.imageSize = imageSize
 		self.intensityCorrection = intensityCorrection
 
+		# vertical (vShift) and horizontal (hShift)n shifts between the first image and its neighbours. 
+		self.hShift = self.calculate_shift_PCC(index1=0, index2=1)
+		self.vShift = self.calculate_shift_PCC(index1=0, index2=tileD[0])
 
 	def calculate_coordinates_firstImage(self, tile):
 		"""
@@ -32,34 +33,31 @@ class Stitching(ImageTreatment):
 		According to the shifts, calculates the coordinates of the top-left pixel of the first image.
 		Returns the coordinates in [-x, y], since we mirror the images to stitch.  
 		"""
-		hShift = self.calculate_shift_PCC(index1=0, index2=1)
-		vShift = self.calculate_shift_PCC(index1=0, index2=tileD[0]) 
 
 		# if an x value is negative, it means the neighbouring image goes to the left, so the first image must be pushed to the right. 
-		if hShift[0] < 0:
-			x = (tileD[1] - 1) * abs(hShift[0])
-		elif vShift[0] < 0:
-			x = (tileD[1] - 1) * abs(vShift[0])
+		if self.hShift[0] < 0:
+			x = (tileD[1] - 1) * abs(self.hShift[0])
+		elif self.vShift[0] < 0:
+			x = (tileD[1] - 1) * abs(self.vShift[0])
 		# if both x values are negative, the first image must be at the right extremity.
-		elif vShift[0] and hShift[0] < 0:
+		elif self.vShift[0] and self.hShift[0] < 0:
 			x = tile.size[0] - self.imageSize[0]
 		else:
 			x = 0
 
 		# if an y value is negative, it means the neighbouring image goes upwards, so the first image must be positioned downwards. 
-		if hShift[1] < 0:
-			y = (tileD[0] - 1) * abs(hShift[1])
-		elif vShift[1] < 0: 
-			y = (tileD[0] - 1) * abs(vShift[1])
+		if self.hShift[1] < 0:
+			y = (tileD[0] - 1) * abs(self.hShift[1])
+		elif self.vShift[1] < 0: 
+			y = (tileD[0] - 1) * abs(self.vShift[1])
 
 		# if both y values are negative, the first image must be at the bottom extremity.
-		elif vShift[1] and hShift[1] < 0:
+		elif self.vShift[1] and self.hShift[1] < 0:
 			x = tile.size[1] - self.imageSize[1]
 		else:
 			y = 0
 
 		return [-x, y]
-
 
 	def calculate_shift_PCC(self, index1:int, index2:int) -> list:
 		"""
@@ -78,6 +76,13 @@ class Stitching(ImageTreatment):
 		return shift
 
 	def calculate_shift_convolution(self, index1:int, index2:int) -> list:
+		"""
+		NOT FINISHED!
+		Input the indexes of two images in a set. 
+		Generates an FFT convolution of two images. 
+		Calculates the coordinates of the maximum peaks of the FFt convolution of the reference image with itself and of the reference image with the moving image. Ideally, this would be used to calculate the spatial shift between the two images. 
+		Returns nothing for now, but would return the shift in [x,y].
+		"""
 		allImages = fman.list_name_of_files(directory=self.directory)
 
 		image1 = fman.read_file(filePath=self.directory + "/" + allImages[index1], imageType="numpy")
@@ -97,9 +102,8 @@ class Stitching(ImageTreatment):
 		Creates a 8-bit black PIL image of the size of the tile.  
 		Returns a 8-bit black PIL image. 
 		"""
-		width = self.imageSize[0] + (abs(self.hShift[0]) * (self.tileD[0]-1)) + abs(self.vShift[0])
-		height = self.imageSize[1] + (abs(self.vShift[1]) * (self.tileD[1]-1)) + abs(self.hShift[1])
-		#print(f"BACKGROUND IMAGE WEIGHT {width} AND HEIGHT {height}")
+		width = self.imageSize[0] + (abs(self.hShift[0]) * (self.tileD[0]-1)) + abs(self.vShift[0]) + 100
+		height = self.imageSize[1] + (abs(self.vShift[1]) * (self.tileD[1]-1)) + abs(self.hShift[1]) + 100
 
 		newImage = Image.new(mode="L", size=[width, height])
 	
@@ -130,7 +134,7 @@ class Stitching(ImageTreatment):
 		""" 
 		Creates the background tile image of the right size. 
 		For all images of the list of files : 
-			Calculates the [x,y] position (pixels) where the top-left pixel of the image has to be pasted. 
+			Calculates the [x,y] coordinates (pixels) where the top-left pixel of the image has to be pasted. 
 			Opens the image in PIL. 
 			Pastes the image on the background tile image. 
 		Returns the tile image with all the images pasted on it. 
