@@ -1,21 +1,23 @@
 from PIL import ImageOps, Image
 import matplotlib.pyplot as plt
+import numpy as np
 from skimage.registration import phase_cross_correlation
 import tifffile as tiff
-import filesManagement as fman
+import scipy.signal
 
-class Stitching:
+import filesManagement as fman
+from imageTreatment import *
+#from typing import *
+
+class Stitching(ImageTreatment):
 	def __init__(self, sourceDir:str, tileD:list, imageSize:list, vShift:list, hShift:list):
-		self.sourceDir = sourceDir
+		super().__init__(sourceDir=sourceDir)
 		self.tileD = tileD
 		self.vShift = vShift
 		self.hShift = hShift
 		self.imageSize = imageSize
 
-		self.files = fman.listNameOfFiles(directory=sourceDir)
-
-
-	def calculate_shift_PCC(self, index1:int, index2:int) -> list:
+	def calculate_shift_PCC(self, index1:int, index2:int, directory:str) -> list:
 		"""
 		Input the indexes of two images in a set.
 		Calculates the spatial shift between two images using the phase cross-correlation.
@@ -23,14 +25,32 @@ class Stitching:
 		corresponds to a shift to the bottom and a positive weight corresponds to a shift to the 
 		right.
 		"""
-		image1 = fman.read_file(filePath=self.sourceDir + "/" + self.files[index1], imageType="numpy")
-		image2 = fman.read_file(filePath=self.sourceDir + "/" + self.files[index2], imageType="numpy")
+		allImages = fman.list_name_of_files(directory=directory)
 
-		reverseShift, error, diffphase = phase_cross_correlation(image1, image2)
-		#print(f'Shift, Error, diffphase : {shift, error, diffphase}')
+		image1 = fman.read_file(filePath=directory + "/" + allImages[index1], imageType="numpy")
+		image2 = fman.read_file(filePath=directory + "/" + allImages[index2], imageType="numpy")
+		print(allImages[index1], allImages[index2])
+
+		reverseShift, error, disphase = phase_cross_correlation(reference_image=image1, moving_image=image2)
 		shift = [reverseShift[1], reverseShift[0]]
 	
 		return shift
+
+	def calculate_shift_convolution(self, index1:int, index2:int, directory:str) -> list:
+		allImages = fman.list_name_of_files(directory=directory)
+
+		image1 = fman.read_file(filePath=directory + "/" + allImages[index1], imageType="numpy")
+		image2 = fman.read_file(filePath=directory + "/" + allImages[index2], imageType="numpy")
+
+		shift = scipy.signal.fftconvolve(image1, image2[::-1,::-1], mode='same')
+		itself = scipy.signal.fftconvolve(image1, image1[::-1,::-1], mode='same')
+
+		maxPeakShift = np.unravel_index(np.argmax(shift), shift.shape)
+		maxPeakItself = np.unravel_index(np.argmax(itself), itself.shape)
+		print(f"LES MAX PEAKS : {maxPeakShift} and {maxPeakItself}")
+
+		return
+
 
 	def create_tile_image(self):
 		"""
@@ -67,7 +87,7 @@ class Stitching:
 	    
 	    return result
 	
-	def stitching_scrapbooking_allImages(self):
+	def stitching_scrapbooking_allImages(self, correction=False):
 		""" 
 		Creates the background tile image of the right size. 
 		For all images of the list of files : 
@@ -78,7 +98,14 @@ class Stitching:
 		"""
 		tile = self.create_tile_image()
 
+		if correction == True:
+			directory, listImages = self.correct_intensity_envelop()
+		else:
+			directory = self.sourceDir
+			listImages = self.files
+
 		i = 0
+
 		coordinates = [0,0] # [width,height]
 	
 		while coordinates[1] < self.tileD[1]: # colonnes, y
@@ -89,7 +116,7 @@ class Stitching:
 				y = ((self.tileD[0]-row)*abs(self.hShift[1])) + (coordinates[1]*self.vShift[1])
 				print(f"coordinates [x,y] of image : {x} and {y}")
 	
-				image = fman.read_file(filePath=self.sourceDir + "/" + self.files[i], imageType="PIL", mirror=True)
+				image = fman.read_file(filePath=directory + "/" + listImages[i], imageType="PIL", mirror=True)
 				tile.paste(image, (x,y))
 				coordinates[0] += 1
 				row += 1

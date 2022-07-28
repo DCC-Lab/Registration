@@ -2,8 +2,20 @@ import os
 import fnmatch
 from PIL import Image, ImageOps
 import numpy as np
+import tifffile as tiff
 
-def listNameOfFiles(directory: str, extension="tif") -> list:
+
+def create_new_directory(directory: str, newFileName: str):
+	"""
+	Create new folder. 
+	Returns the path of the new folder. 
+	"""
+	newDir = directory+"/"+newFileName
+	if not os.path.exists(newDir):
+		os.makedirs(newDir)
+	return newDir
+	
+def list_name_of_files(directory: str, extension="tif") -> list:
 	"""
 	Fetch files name. 
 	Does not consider .DS_Store files. 
