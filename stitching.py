@@ -174,7 +174,9 @@ class Stitching(ImageTreatment):
 					hCoordinates = [coordinates[0], coordinates[1]]
 
 				image = fman.read_file(filePath=self.directory + "/" + self.files[i], imageType="PIL", mirror=self.isMirrored)
-				tile.paste(image, coordinates)
+				print(coordinates)
+				tile.paste(image, (coordinates[0], coordinates[1]))
+				print(coordinates)
 	
 				position[0] += 1
 				i += 1
