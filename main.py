@@ -6,8 +6,7 @@ tileDimensions = [2, 3]
 verticalShift = [47, 363]
 horizontalShift = [163, -12]
 
-print(sourcePath)
-
 stitch = Stitching(sourceDir=sourcePath, tileD=tileDimensions, imageSize=[1024,512], isIntensityCorrection=True, isMirrored=True)
+stitch.calculate_shift_convolution(index1=0, index2=2)
 stitchedImage = stitch.stitching_scrapbooking_allImages()
 stitchedImage.save(fp="/Users/valeriepineaunoel/Desktop/stitchedImage.tiff")

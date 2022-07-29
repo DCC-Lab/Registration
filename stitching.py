@@ -4,6 +4,8 @@ import numpy as np
 from skimage.registration import phase_cross_correlation
 import tifffile as tiff
 import scipy.signal
+from arosics import COREG
+from geoarray import GeoArray
 
 import filesManagement as fman
 from imageTreatment import *
@@ -34,9 +36,6 @@ class Stitching(ImageTreatment):
 		Verifies if the user wants to mirror the images. If so, the sign of the x coordinate changes. 
 		Returns the coordinates in [x, y]. 
 		"""
-
-		print(f"vShift and hShift : {self.vShift} and {self.hShift}")
-
 		# if an x value is negative, it means the neighbouring image goes to the left, so the first image must be pushed to the right. 
 		if self.vShift[0] and self.hShift[0] < 0:
 			x = tile.size[0] - self.imageSize[0]
@@ -95,10 +94,12 @@ class Stitching(ImageTreatment):
 		image2 = fman.read_file(filePath=self.directory + "/" + allImages[index2], imageType="numpy")
 
 		shift = scipy.signal.fftconvolve(image1, image2[::-1,::-1], mode='same')
-		itself = scipy.signal.fftconvolve(image1, image1[::-1,::-1], mode='same')
+		autocorr = scipy.signal.fftconvolve(image1, image1[::-1,::-1], mode='same')
 
 		maxPeakShift = np.unravel_index(np.argmax(shift), shift.shape)
-		maxPeakItself = np.unravel_index(np.argmax(itself), itself.shape)
+		maxPeakAutocorr = np.unravel_index(np.argmax(autocorr), autocorr.shape)
+
+		#print(f"MAX PEAKS : {maxPeakShift} and {maxPeakAutocorr}")
 
 		return
 
