@@ -35,26 +35,25 @@ class Stitching(ImageTreatment):
 		Returns the coordinates in [x, y]. 
 		"""
 
+		print(f"vShift and hShift : {self.vShift} and {self.hShift}")
+
 		# if an x value is negative, it means the neighbouring image goes to the left, so the first image must be pushed to the right. 
-		if self.hShift[0] < 0:
+		if self.vShift[0] and self.hShift[0] < 0:
+			x = tile.size[0] - self.imageSize[0]
+		elif self.hShift[0] < 0:
 			x = (self.tileD[1] - 1) * abs(self.hShift[0])
 		elif self.vShift[0] < 0:
 			x = (self.tileD[1] - 1) * abs(self.vShift[0])
-		# if both x values are negative, the first image must be at the right extremity.
-		elif self.vShift[0] and self.hShift[0] < 0:
-			x = tile.size[0] - self.imageSize[0]
 		else:
 			x = 0
 
 		# if an y value is negative, it means the neighbouring image goes upwards, so the first image must be positioned downwards. 
-		if self.hShift[1] < 0:
+		if self.vShift[1] and self.hShift[1] < 0:
+			y = tile.size[1] - self.imageSize[1]
+		elif self.hShift[1] < 0:
 			y = (self.tileD[0] - 1) * abs(self.hShift[1])
 		elif self.vShift[1] < 0: 
 			y = (self.tileD[0] - 1) * abs(self.vShift[1])
-
-		# if both y values are negative, the first image must be at the bottom extremity.
-		elif self.vShift[1] and self.hShift[1] < 0:
-			x = tile.size[1] - self.imageSize[1]
 		else:
 			y = 0
 
@@ -150,7 +149,8 @@ class Stitching(ImageTreatment):
 
 		firstImageCoordinates = self.calculate_coordinates_firstImage(tile=tile)
 		image = fman.read_file(filePath=self.directory + "/" + self.files[0], imageType="PIL", mirror=self.isMirrored)
-		tile.paste(image, firstImageCoordinates)
+		tile.paste(image, (firstImageCoordinates[0], firstImageCoordinates[1]))
+		print(f"first image : {firstImageCoordinates}")
 
 		position = [1,0] # [width,height]
 		i = 1
@@ -164,12 +164,14 @@ class Stitching(ImageTreatment):
 				# if first image of the row, use the image on top to calculate the shift
 				if position[0] == 0:
 					shift = self.calculate_shift_PCC(index1=i-self.tileD[0], index2=i)
+					print(f"shift 0 : {shift}")
 					coordinates = [vCoordinates[0] + shift[0], vCoordinates[1] + shift[1]]
 					hCoordinates = [coordinates[0], coordinates[1]]
 					vCoordinates = [coordinates[0], coordinates[1]]
 				# if not first image of the row, use the previous image to calcualte the shift
 				else:
 					shift = self.calculate_shift_PCC(index1=i-1, index2=i)
+					print(f"shift last : {shift}")
 					coordinates = [hCoordinates[0] + shift[0], hCoordinates[1] + shift[1]]
 					hCoordinates = [coordinates[0], coordinates[1]]
 
