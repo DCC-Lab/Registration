@@ -61,6 +61,15 @@ class Stitching(ImageTreatment):
 
 		return [int(x), int(y)]
 
+	def calculate_shift_COREG(self, index1:int, index2:int):
+
+		reference = fman.read_file(filePath=self.directory + "/" + self.files[index1], imageType="numpy")
+		moving = fman.read_file(filePath=self.directory + "/" + self.files[index2], imageType="numpy")
+
+		CR = COREG(reference, moving, wp(120., 369.), ws=(90,90))
+
+		return CR.calculate_spatial_shifts()
+
 	def calculate_shift_PCC(self, index1:int, index2:int) -> list:
 		"""
 		Input the indexes of two images in a set.
