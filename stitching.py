@@ -4,8 +4,8 @@ import numpy as np
 from skimage.registration import phase_cross_correlation
 import tifffile as tiff
 import scipy.signal
-from arosics import COREG
-from geoarray import GeoArray
+#from arosics import COREG
+#from geoarray import GeoArray
 
 import filesManagement as fman
 from imageTreatment import *
@@ -25,8 +25,8 @@ class Stitching(ImageTreatment):
 		self.isMirrored = isMirrored
 
 		# vertical (vShift) and horizontal (hShift)n shifts between the first image and its neighbours. 
-		self.hShift = self.calculate_shift_PCC(index1=0, index2=1)
-		self.vShift = self.calculate_shift_PCC(index1=0, index2=tileD[0])
+		#self.hShift = self.calculate_shift_PCC(index1=0, index2=1)
+		#self.vShift = self.calculate_shift_PCC(index1=0, index2=tileD[0])
 
 	def calculate_coordinates_firstImage(self, tile):
 		"""
@@ -97,10 +97,8 @@ class Stitching(ImageTreatment):
 		Calculates the coordinates of the maximum peaks of the FFt convolution of the reference image with itself and of the reference image with the moving image. Ideally, this would be used to calculate the spatial shift between the two images. 
 		Returns nothing for now, but would return the shift in [x,y].
 		"""
-		allImages = fman.list_name_of_files(directory=self.directory)
-
-		image1 = fman.read_file(filePath=self.directory + "/" + allImages[index1], imageType="numpy")
-		image2 = fman.read_file(filePath=self.directory + "/" + allImages[index2], imageType="numpy")
+		image1 = fman.read_file(filePath=self.directory + "/" + self.files[index1], imageType="numpy")
+		image2 = fman.read_file(filePath=self.directory + "/" + self.files[index2], imageType="numpy")
 
 		shift = scipy.signal.fftconvolve(image1, image2[::-1,::-1], mode='same')
 		autocorr = scipy.signal.fftconvolve(image1, image1[::-1,::-1], mode='same')
@@ -108,7 +106,7 @@ class Stitching(ImageTreatment):
 		maxPeakShift = np.unravel_index(np.argmax(shift), shift.shape)
 		maxPeakAutocorr = np.unravel_index(np.argmax(autocorr), autocorr.shape)
 
-		#print(f"MAX PEAKS : {maxPeakShift} and {maxPeakAutocorr}")
+		print(f"MAX PEAKS : {maxPeakShift} and {maxPeakAutocorr}")
 
 		return
 
