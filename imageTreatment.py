@@ -148,6 +148,24 @@ class ImageTreatment:
 
 		return rescaledImage
 
+	def subtract_value_on_all_pixels(self, value, image):
+		"""
+		Takes a numpy image and a value to subtract in input. 
+		For each element in the image that are higher than the value to be subtracted, the value is subtracted from the value. 
+		Returns the subtracted image. 
+		"""
+		x = 0
+		y = 0
+		while y < image.shape[0]:
+			while x < image.shape[1]:
+				if image[y, x] > value:
+					image[y, x] = image[y, x] - value
+				x += 1
+			x = 0
+			y += 1
+
+		return image
+
 	def sum_pixels(self):
 		"""
 		Reads all images in directory and sums the value of each pixels. 
