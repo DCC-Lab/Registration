@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from skimage.registration import phase_cross_correlation
 import tifffile as tiff
-import scipy.signal
+from scipy.signal import fftconvolve
 
 import exceptions as exc
 import filesManagement as fman
@@ -87,26 +87,41 @@ class Stitching(ImageTreatment):
 	
 		return shift
 
-	def calculate_shift_convolution(self, index1:int, index2:int) -> list:
+	def calculate_shift_convolution(self, imageRef1:int, imageRef2:int) -> list:
 		"""
-		NOT FINISHED!
-		Input the indexes of two images in a set. 
-		Generates an FFT convolution of two images. 
-		Calculates the coordinates of the maximum peaks of the FFt convolution of the reference image with itself and of the reference image with the moving image. Ideally, this would be used to calculate the spatial shift between the two images. 
-		Returns nothing for now, but would return the shift in [x,y].
+		Input two images, either as PIL images or as indices.
+		If indices are input, according images are fetched from an image list.
+		Does a convolution between both images and finds the position of the maximum value of the convoluted image.
+		Does a convolution between the first image and itself and finds the position of the maximum value.
+		Finds the difference between these two maxima, resulting in a pixel shift.
+		Applies mirroring or flipping to the result if prompted to.
+		Returns the shift as [x, y]
 		"""
-		image1 = fman.read_file(filePath=self.directory + "/" + self.files[index1], imageType="numpy")
-		image2 = fman.read_file(filePath=self.directory + "/" + self.files[index2], imageType="numpy")
+		if type(imageRef1) and type(imageRef2) == int:
+			index_given = True
+			npimage1 = fman.read_file(filePath=self.directory + "/" + self.files[imageRef1], imageType="numpy")
+			npimage2 = fman.read_file(filePath=self.directory + "/" + self.files[imageRef2], imageType="numpy")
+		else:
+			index_given = False
+			npimage1 = np.asarray(imageRef1)
+			npimage2 = np.asarray(imageRef2)
 
-		shift = scipy.signal.fftconvolve(image1, image2[::-1,::-1], mode='same')
-		autocorr = scipy.signal.fftconvolve(image1, image1[::-1,::-1], mode='same')
+		relative_shift = fftconvolve(npimage1, npimage2[::-1, ::-1], mode='same')
+		autocorr = fftconvolve(npimage1, npimage1[::-1, ::-1], mode='same')
 
-		maxPeakShift = np.unravel_index(np.argmax(shift), shift.shape)
+		maxPeakShift = np.unravel_index(np.argmax(relative_shift), relative_shift.shape)
 		maxPeakAutocorr = np.unravel_index(np.argmax(autocorr), autocorr.shape)
 
-		print(f"MAX PEAKS : {maxPeakShift} and {maxPeakAutocorr}")
+		shift = list(map(lambda i, j: i - j, maxPeakAutocorr, maxPeakShift))
 
-		return
+		if index_given:
+			if self.isMirrored:
+				shift[1] *= -1
+			if self.isFlipped:
+				shift[0] *= -1
+
+		shift = [shift[1], shift[0]]
+		return shift
 
 	def create_black_image(self, width=None, height=None):
 		"""
