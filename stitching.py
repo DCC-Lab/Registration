@@ -25,7 +25,7 @@ class Stitching(ImageTreatment):
 		self.isFlipped = isFlipped
 
 		# vertical (vShift) and horizontal (hShift) shifts between the first image and its neighbours. 
-		self.hShift = self.calculate_shift_PCC(index1=0, index2=1)
+		self.hShift = self.calculate_shift_PCC(imageRef1=0, imageRef2=1)
 		self.vShift = self.estimate_shift(index=0, stitchingSide="V")
 
 	def calculate_coordinates_firstImage(self, background):
@@ -191,7 +191,7 @@ class Stitching(ImageTreatment):
 		lowCropMoving = self.apply_low_pass_filter(image=cropMoving)
 
 		# Estimates shift of low-passed cropped images.
-		shift = self.calculate_shift_PCC(index1=lowCropReference, index2=lowCropMoving)
+		shift = self.calculate_shift_PCC(imageRef1=lowCropReference, imageRef2=lowCropMoving)
 
 		# Rescales the shift to make it correspond to the top-left coordinate (makes up for the crop).
 		if stitchingSide == "V":
@@ -214,29 +214,24 @@ class Stitching(ImageTreatment):
 		"""
 		tile = self.create_black_image()
 
-		firstImageCoordinates = self.calculate_coordinates_firstImage(background=tile)
-		image = fman.read_file(filePath=self.directory + "/" + self.files[0], imageType="PIL", mirror=self.isMirrored, flip=self.isFlipped)
-		tile.paste(image, (firstImageCoordinates[0], firstImageCoordinates[1]))
-		print(f"first image : {firstImageCoordinates}")
+		i = 0
 
-		position = [1,0] # [width,height]
-		i = 1
-
-		# keeps track of the coordinates of the first image of the row (vCoordinates) and of the previous image (hCoordinates)
-		vCoordinates = [firstImageCoordinates[0], firstImageCoordinates[1]]
-		hCoordinates = [firstImageCoordinates[0], firstImageCoordinates[1]]
-
-		while position[1] < self.tileD[1]: # colonnes, y
-			while position[0] < self.tileD[0]: # rangées, x
+		for y in range(self.tileD[1]): # rangées, y
+			for x in range(self.tileD[0]): # colonnes, x
 				# if first image of the row, use the image on top to calculate the shift
-				if position[0] == 0:
-					shift = self.estimate_shift(index=i, stitchingSide="V")
-					coordinates = [vCoordinates[0] + shift[0], vCoordinates[1] + shift[1]]
-					hCoordinates = [coordinates[0], coordinates[1]]
-					vCoordinates = [coordinates[0], coordinates[1]]
+				if x == 0:
+					if y == 0:
+						coordinates = self.calculate_coordinates_firstImage(background=tile)
+						vCoordinates = [coordinates[0], coordinates[1]]
+						hCoordinates = [coordinates[0], coordinates[1]]
+					else:
+						shift = self.estimate_shift(index=i, stitchingSide="V")
+						coordinates = [vCoordinates[0] + shift[0], vCoordinates[1] + shift[1]]
+						hCoordinates = [coordinates[0], coordinates[1]]
+						vCoordinates = [coordinates[0], coordinates[1]]
 				# if not first image of the row, use the previous image to calcualte the shift
 				else:
-					shift = self.calculate_shift_PCC(index1=i-1, index2=i)
+					shift = self.calculate_shift_PCC(imageRef1=i-1, imageRef2=i)
 					print(f"shift last : {shift}")
 					coordinates = [hCoordinates[0] + shift[0], hCoordinates[1] + shift[1]]
 					hCoordinates = [coordinates[0], coordinates[1]]
@@ -245,10 +240,7 @@ class Stitching(ImageTreatment):
 				print(coordinates)
 				tile.paste(image, (coordinates[0], coordinates[1]))
 	
-				position[0] += 1
 				i += 1
-			position[1] += 1
-			position[0] = 0
 	
 		return tile
 	
