@@ -5,6 +5,7 @@ from skimage.registration import phase_cross_correlation
 import tifffile as tiff
 import scipy.signal
 
+import exceptions as exc
 import filesManagement as fman
 from imageTreatment import *
 #from typing import *
@@ -121,31 +122,40 @@ class Stitching(ImageTreatment):
 	
 		return newImage
 
-	def estimate_vertical_shift(self, index:int):
-		if index == 0: 
+	def estimate_shift(self, index:int, stitchingSide:str):
+		if index == 0 and stitchingSide == "V": 
 			referenceIndex = 0
 			movingIndex = self.tileD[0]
-		else : 
+
+		elif index != 0 and stitchingSide == "V":
 			referenceIndex = index-self.tileD[0]
 			movingIndex = index
 
-		noise1 = np.asarray(Image.effect_noise((self.imageSize[0], self.imageSize[1]-300), 12))
-		subNoise1 = self.subtract_value_on_all_pixels(value=100, image=noise1)
-		noiseImage1 = Image.fromarray(subNoise1)
+		elif index == 0 and stitchingSide == "H": 
+			referenceIndex = index
+			movingIndex = index+1
 
-		noise2 = np.asarray(Image.effect_noise((self.imageSize[0], self.imageSize[1]-100), 50))
-		#subNoise2 = self.subtract_value_on_all_pixels(value=, image=noise2)
-		noiseImage2 = Image.fromarray(noise2)
+		else:
+			exc.define_variable(stitchingSide)
+			exc.define_variable(index)
+
 
 		reference = fman.read_file(filePath=self.directory + "/" + self.files[referenceIndex], imageType="PIL", mirror=self.isMirrored)
-		reference.paste(noiseImage1, (0, 0))
-		path = "/Users/valeriepineaunoel/Desktop/noiseImage1-" + str(referenceIndex) + ".tiff"
-		reference.save(fp=path)
-
 		moving = fman.read_file(filePath=self.directory + "/" + self.files[movingIndex], imageType="PIL", mirror=self.isMirrored)
-		moving.paste(noiseImage2, (0, 100))
-		path = "/Users/valeriepineaunoel/Desktop/noiseImage2-" + str(movingIndex) + ".tiff"
-		moving.save(fp=path)
+
+		if stitchingSide == "V":
+			left = 0
+			top = 357
+		elif stitchingSide == "H":
+			left = 815
+			top = 0
+		else:
+			exc.define_variable(stitchingSide)
+
+		right = 1024
+		bottom = 512
+
+		crop_reference = reference.crop((left, top, right, bottom))
 
 		shift = self.calculate_shift_PCC(index1=reference, index2=moving)
 		print(f"shift vertical : {shift}")
