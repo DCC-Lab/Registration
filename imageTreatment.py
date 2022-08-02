@@ -41,6 +41,25 @@ class ImageTreatment:
 
 		return new8bitImage
 
+	def apply_low_pass_filter(self, image):
+		"""
+		Applies a low-pass filter on the image given in input. 
+		Returns the filtered image. 
+		"""
+		# FFT of np.asarray
+		fftimage = np.fft.fftshift(np.fft.fft2(image))
+
+		# Create low-pass filter. 
+		lowPassFilter = self.low_Pass_Filter(image=image, sigmaFilter=1)
+
+		# Apply low-pass filters on respective cropped images. 
+		lowFFTimage = lowPassFilter * fftimage
+
+		# iFFT of low-passed cropped images. 
+		lowImage = np.fft.ifft2(np.fft.ifftshift(lowFFTimage))
+
+		return lowImage
+
 	def correct_intensity_envelop(self):
 		"""
 		Creates an intensity-correction image. 
@@ -129,6 +148,27 @@ class ImageTreatment:
 		gaussNorm = gauss/maxPixel
 
 		return gaussNorm
+
+	def merge_images_sidebyside(self, index1:int, index2:int):
+	    """
+	    Input the indexes of two images in a set. 
+	    Merge two images into one, displayed side by side.
+	    Returns the merged image object.
+	    """
+	    image1 = fman.read_file(filePath=self.directory + "/" + self.files[index1], imageType="PIL", mirror=self.isMirrored, flip=self.isFlipped)
+	    image2 = fman.read_file(filePath=self.directory + "/" + self.files[index2], imageType="PIL", mirror=self.isMirrored, flip=self.isFlipped)
+	
+	    (width1, height1) = image1.size
+	    (width2, height2) = image2.size
+	
+	    result_width = width1 + width2
+	    result_height = max(height1, height2)
+	
+	    result = Image.new('RGB', (result_width, result_height))
+	    result.paste(im=image1, box=(0, 0))
+	    result.paste(im=image2, box=(width1, 0))
+	    
+	    return result
 
 	def normalize_image(self, image):
 		""" 

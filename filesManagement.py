@@ -32,7 +32,7 @@ def list_name_of_files(directory: str, extension="tif") -> list:
 	foundFiles.sort()
 	return foundFiles
 
-def read_file(filePath, imageType, mirror=False):
+def read_file(filePath, imageType, mirror=False, flip=False):
 	"""
 	Reads the .tif file and convert them in a np.array or PIL image. 
 	If mirror == True, mirrors the PIL image. 
@@ -42,7 +42,9 @@ def read_file(filePath, imageType, mirror=False):
 		image = tiff.imread(filePath)
 	if imageType == "PIL":
 		image = Image.open(filePath)
-	if mirror == True:
+	if mirror:
 		image = ImageOps.mirror(image)
+	if flip:
+		image = ImageOps.flip(image)
 
 	return image
