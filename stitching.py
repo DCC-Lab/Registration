@@ -24,8 +24,8 @@ class Stitching(ImageTreatment):
 		self.isMirrored = isMirrored
 
 		# vertical (vShift) and horizontal (hShift)n shifts between the first image and its neighbours. 
-		#self.hShift = self.calculate_shift_PCC(index1=0, index2=1)
-		#self.vShift = self.estimate_vertical_shift(index=0)
+		self.hShift = self.calculate_shift_PCC(index1=0, index2=1)
+		self.vShift = self.estimate_shift(index=0, stitchingSide="V")
 
 	def calculate_coordinates_firstImage(self, image):
 		"""
@@ -37,8 +37,9 @@ class Stitching(ImageTreatment):
 		"""
 
 		print(f"HSHIFT : {self.hShift}")
+		print(f"VSHIFT : {self.vShift}")
 		# if an x value is negative, it means the neighbouring image goes to the left, so the first image must be pushed to the right. 
-		if self.vShift[0] and self.hShift[0] < 0:
+		if self.vShift[0] < 0 and self.hShift[0] < 0:
 			x = image.size[0] - self.imageSize[0]
 		elif self.hShift[0] < 0:
 			x = (self.tileD[1] - 1) * abs(self.hShift[0])
@@ -48,7 +49,7 @@ class Stitching(ImageTreatment):
 			x = 0
 
 		# if an y value is negative, it means the neighbouring image goes upwards, so the first image must be positioned downwards. 
-		if self.vShift[1] and self.hShift[1] < 0:
+		if self.vShift[1] < 0 and self.hShift[1] < 0:
 			y = image.size[1] - self.imageSize[1]
 		elif self.hShift[1] < 0:
 			y = (self.tileD[0] - 1) * abs(self.hShift[1])
@@ -187,6 +188,12 @@ class Stitching(ImageTreatment):
 
 		shift = self.calculate_shift_PCC(index1=lowCropReference, index2=lowCropMoving)
 
+		if stitchingSide == "V":
+			shift[1] = shift[1] + (self.imageSize[1]-250)
+
+		if stitchingSide == "H":
+			shift[0] = shift[0] + (self.imageSize[0]-500)
+
 		return shift
 
 	def merge_images_sidebyside(self, index1:int, index2:int):
@@ -237,7 +244,7 @@ class Stitching(ImageTreatment):
 			while position[0] < self.tileD[0]: # rangées, x
 				# if first image of the row, use the image on top to calculate the shift
 				if position[0] == 0:
-					shift = self.estimate_vertical_shift(index=i)
+					shift = self.estimate_shift(index=i, stitchingSide="V")
 					coordinates = [vCoordinates[0] + shift[0], vCoordinates[1] + shift[1]]
 					hCoordinates = [coordinates[0], coordinates[1]]
 					vCoordinates = [coordinates[0], coordinates[1]]
