@@ -112,7 +112,7 @@ class ImageTreatment:
 
 		return inverseImage
 
-	def low_Pass_Filter(image, sigmaFilter):
+	def low_Pass_Filter(self, image, sigmaFilter):
 		"""
 		Creates a low-pass filter in the Fourier space. 
 		As an imput, 
@@ -120,7 +120,7 @@ class ImageTreatment:
 			- signamFilter defines the width of the filter.
 		Returns the Fourier-image of the filter. This should be multiplied by the FFT image to filter, then iFFT the product to recover the image.
 		"""
-		x, y = np.meshgrid(np.linspace(-1,1,image.shape[0]), np.linspace(-1,1,image.shape[1]))
+		x, y = np.meshgrid(np.linspace(-1,1,image.shape[1]), np.linspace(-1,1,image.shape[0]))
 		d = np.sqrt(x*x+y*y)
 		sigma = (sigmaFilter*0.18)/(2*math.sqrt(2*math.log(2)))
 		mu = 0.0
