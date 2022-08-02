@@ -222,8 +222,11 @@ class Stitching(ImageTreatment):
 				if x == 0:
 					if y == 0:
 						coordinates = self.calculate_coordinates_firstImage(background=tile)
-						vCoordinates = [coordinates[0], coordinates[1]]
-						hCoordinates = [coordinates[0], coordinates[1]]
+						#vCoordinates = [coordinates[0], coordinates[1]]
+						#hCoordinates = [coordinates[0], coordinates[1]]
+						vCoordinates = coordinates
+						hCoordinates = coordinates
+						print(f"COOR : {vCoordinates} and {hCoordinates}")
 					else:
 						shift = self.estimate_shift(index=i, stitchingSide="V")
 						coordinates = [vCoordinates[0] + shift[0], vCoordinates[1] + shift[1]]
@@ -238,7 +241,10 @@ class Stitching(ImageTreatment):
 
 				image = fman.read_file(filePath=self.directory + "/" + self.files[i], imageType="PIL", mirror=self.isMirrored, flip=self.isFlipped)
 				print(coordinates)
-				tile.paste(image, (coordinates[0], coordinates[1]))
+				coords = coordinates
+				print(f"BEFORE PASTE : {coords}")
+				tile.paste(image, coordinates)
+				print(f"AFTER PASTE : {coords}")
 	
 				i += 1
 	
