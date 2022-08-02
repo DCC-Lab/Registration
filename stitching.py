@@ -139,8 +139,6 @@ class Stitching(ImageTreatment):
 			exc.define_variable(stitchingSide)
 			exc.define_variable(index)
 
-		print(f"INDEXES : {referenceIndex} and {movingIndex}")
-
 		reference = fman.read_file(filePath=self.directory + "/" + self.files[referenceIndex], imageType="PIL", mirror=self.isMirrored)
 		moving = fman.read_file(filePath=self.directory + "/" + self.files[movingIndex], imageType="PIL", mirror=self.isMirrored)
 
@@ -155,7 +153,7 @@ class Stitching(ImageTreatment):
 			mtop = 0
 			mright = self.imageSize[0]
 			mbottom = 250
-			
+
 			print("VERTICAL")
 		elif stitchingSide == "H":
 			rleft = self.imageSize[0] - 500
@@ -177,23 +175,15 @@ class Stitching(ImageTreatment):
 
 		fftCropReference = np.fft.fftshift(np.fft.fft2(cropReference))
 		fftCropMoving = np.fft.fftshift(np.fft.fft2(cropMoving))
-		tiff.imwrite("/Users/valeriepineaunoel/Desktop/crop_reference.tiff", cropReference)
-		tiff.imwrite("/Users/valeriepineaunoel/Desktop/crop_moving.tiff", cropMoving)
 
 		lowPassFilterReference = self.low_Pass_Filter(image=cropReference, sigmaFilter=1)
 		lowPassFilterMoving = self.low_Pass_Filter(image=cropMoving, sigmaFilter=1)
-
-		tiff.imwrite("/Users/valeriepineaunoel/Desktop/lowPassFilterReference.tiff", lowPassFilterReference)
-		tiff.imwrite("/Users/valeriepineaunoel/Desktop/lowPassFilterMoving.tiff", lowPassFilterMoving)
 
 		lowFFTCropReference = lowPassFilterReference * fftCropReference
 		lowFFTCropMoving = lowPassFilterMoving * fftCropMoving
 
 		lowCropReference = np.fft.ifft2(np.fft.ifftshift(lowFFTCropReference))
 		lowCropMoving = np.fft.ifft2(np.fft.ifftshift(lowFFTCropMoving))
-
-		tiff.imwrite("/Users/valeriepineaunoel/Desktop/low_crop_reference.tiff", lowCropReference)
-		tiff.imwrite("/Users/valeriepineaunoel/Desktop/low_crop_moving.tiff", lowCropMoving)
 
 		shift = self.calculate_shift_PCC(index1=lowCropReference, index2=lowCropMoving)
 
