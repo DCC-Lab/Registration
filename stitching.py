@@ -118,7 +118,7 @@ class Stitching(ImageTreatment):
 			if self.isFlipped:
 				shift[0] *= -1
 
-		shift = shift[1] + shift[0]
+		shift = [shift[1], shift[0]]
 		return shift
 
 	def create_black_image(self, width=None, height=None):
