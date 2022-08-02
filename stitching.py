@@ -5,6 +5,7 @@ from skimage.registration import phase_cross_correlation
 import tifffile as tiff
 import scipy.signal
 
+import exceptions as exc
 import filesManagement as fman
 from imageTreatment import *
 #from typing import *
@@ -23,8 +24,8 @@ class Stitching(ImageTreatment):
 		self.isMirrored = isMirrored
 
 		# vertical (vShift) and horizontal (hShift)n shifts between the first image and its neighbours. 
-		#self.hShift = self.calculate_shift_PCC(index1=0, index2=1)
-		#self.vShift = self.estimate_vertical_shift(index=0)
+		self.hShift = self.calculate_shift_PCC(index1=0, index2=1)
+		self.vShift = self.estimate_shift(index=0, stitchingSide="V")
 
 	def calculate_coordinates_firstImage(self, image):
 		"""
@@ -36,8 +37,9 @@ class Stitching(ImageTreatment):
 		"""
 
 		print(f"HSHIFT : {self.hShift}")
+		print(f"VSHIFT : {self.vShift}")
 		# if an x value is negative, it means the neighbouring image goes to the left, so the first image must be pushed to the right. 
-		if self.vShift[0] and self.hShift[0] < 0:
+		if self.vShift[0] < 0 and self.hShift[0] < 0:
 			x = image.size[0] - self.imageSize[0]
 		elif self.hShift[0] < 0:
 			x = (self.tileD[1] - 1) * abs(self.hShift[0])
@@ -47,7 +49,7 @@ class Stitching(ImageTreatment):
 			x = 0
 
 		# if an y value is negative, it means the neighbouring image goes upwards, so the first image must be positioned downwards. 
-		if self.vShift[1] and self.hShift[1] < 0:
+		if self.vShift[1] < 0 and self.hShift[1] < 0:
 			y = image.size[1] - self.imageSize[1]
 		elif self.hShift[1] < 0:
 			y = (self.tileD[0] - 1) * abs(self.hShift[1])
@@ -121,37 +123,78 @@ class Stitching(ImageTreatment):
 	
 		return newImage
 
-	def estimate_vertical_shift(self, index:int):
-		if index == 0: 
+	def estimate_shift(self, index:int, stitchingSide:str):
+		if index == 0 and stitchingSide == "V": 
 			referenceIndex = 0
 			movingIndex = self.tileD[0]
-		else : 
+
+		elif index != 0 and stitchingSide == "V":
 			referenceIndex = index-self.tileD[0]
 			movingIndex = index
 
-		noise1 = np.asarray(Image.effect_noise((self.imageSize[0], self.imageSize[1]-300), 12))
-		subNoise1 = self.subtract_value_on_all_pixels(value=100, image=noise1)
-		noiseImage1 = Image.fromarray(subNoise1)
+		elif stitchingSide == "H": 
+			referenceIndex = index
+			movingIndex = index+1
 
-		noise2 = np.asarray(Image.effect_noise((self.imageSize[0], self.imageSize[1]-100), 50))
-		#subNoise2 = self.subtract_value_on_all_pixels(value=, image=noise2)
-		noiseImage2 = Image.fromarray(noise2)
+		else:
+			exc.define_variable(stitchingSide)
+			exc.define_variable(index)
 
 		reference = fman.read_file(filePath=self.directory + "/" + self.files[referenceIndex], imageType="PIL", mirror=self.isMirrored)
-		reference.paste(noiseImage1, (0, 0))
-		path = "/Users/valeriepineaunoel/Desktop/noiseImage1-" + str(referenceIndex) + ".tiff"
-		reference.save(fp=path)
-
 		moving = fman.read_file(filePath=self.directory + "/" + self.files[movingIndex], imageType="PIL", mirror=self.isMirrored)
-		moving.paste(noiseImage2, (0, 100))
-		path = "/Users/valeriepineaunoel/Desktop/noiseImage2-" + str(movingIndex) + ".tiff"
-		moving.save(fp=path)
 
-		shift = self.calculate_shift_PCC(index1=reference, index2=moving)
-		print(f"shift vertical : {shift}")
+		# crop defines the region you want to keep 
+		if stitchingSide == "V":
+			rleft = 0
+			rtop = self.imageSize[1] - 250
+			rright = self.imageSize[0]
+			rbottom = self.imageSize[1]
+
+			mleft = 0
+			mtop = 0
+			mright = self.imageSize[0]
+			mbottom = 250
+
+			print("VERTICAL")
+		elif stitchingSide == "H":
+			rleft = self.imageSize[0] - 500
+			rtop = 0
+			rright = self.imageSize[0]
+			rbottom = self.imageSize[1]
+
+			mleft = 0
+			mtop = 0
+			mright = 500
+			mbottom = self.imageSize[1]
+
+			print("HORIZONTAL")
+		else:
+			exc.define_variable(stitchingSide)
+
+		cropReference = np.asarray(reference.crop((rleft, rtop, rright, rbottom)))
+		cropMoving = np.asarray(moving.crop((mleft, mtop, mright, mbottom)))
+
+		fftCropReference = np.fft.fftshift(np.fft.fft2(cropReference))
+		fftCropMoving = np.fft.fftshift(np.fft.fft2(cropMoving))
+
+		lowPassFilterReference = self.low_Pass_Filter(image=cropReference, sigmaFilter=1)
+		lowPassFilterMoving = self.low_Pass_Filter(image=cropMoving, sigmaFilter=1)
+
+		lowFFTCropReference = lowPassFilterReference * fftCropReference
+		lowFFTCropMoving = lowPassFilterMoving * fftCropMoving
+
+		lowCropReference = np.fft.ifft2(np.fft.ifftshift(lowFFTCropReference))
+		lowCropMoving = np.fft.ifft2(np.fft.ifftshift(lowFFTCropMoving))
+
+		shift = self.calculate_shift_PCC(index1=lowCropReference, index2=lowCropMoving)
+
+		if stitchingSide == "V":
+			shift[1] = shift[1] + (self.imageSize[1]-250)
+
+		if stitchingSide == "H":
+			shift[0] = shift[0] + (self.imageSize[0]-500)
 
 		return shift
-
 
 	def merge_images_sidebyside(self, index1:int, index2:int):
 	    """
@@ -201,7 +244,7 @@ class Stitching(ImageTreatment):
 			while position[0] < self.tileD[0]: # rangées, x
 				# if first image of the row, use the image on top to calculate the shift
 				if position[0] == 0:
-					shift = self.estimate_vertical_shift(index=i)
+					shift = self.estimate_shift(index=i, stitchingSide="V")
 					coordinates = [vCoordinates[0] + shift[0], vCoordinates[1] + shift[1]]
 					hCoordinates = [coordinates[0], coordinates[1]]
 					vCoordinates = [coordinates[0], coordinates[1]]

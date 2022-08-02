@@ -1,15 +1,8 @@
 from stitching import *
 
-sourcePath = "/Users/valeriepineaunoel/Desktop/test20%/cropTest"
+sourcePath = "/Users/valeriepineaunoel/Desktop/test20%/IntensityCorrection"
 tileDimensions = [2, 3]
-# [x,y]. Positive y = going down. Positive x = going right. When comparing image2 with image1 : 
-verticalShift = [47, 363]
-horizontalShift = [163, -12]
 
-stitch = Stitching(sourceDir=sourcePath, tileD=tileDimensions, imageSize=[1024,512], isIntensityCorrection=False, isMirrored=True)
-shift1 = stitch.calculate_shift_PCC(index1=1, index2=3)
-shift2 = stitch.calculate_shift_PCC(index1=0, index2=2)
-print(f"PCC : {shift1} and {shift2}")
-
-#stitchedImage = stitch.stitching_scrapbooking_allImages()
-#stitchedImage.save(fp="/Users/valeriepineaunoel/Desktop/stitchedImage.tiff")
+stitch = Stitching(sourceDir=sourcePath, tileD=tileDimensions, imageSize=[1024,512], isIntensityCorrection=False, isMirrored=False)
+stitchedImage = stitch.stitching_scrapbooking_allImages()
+stitchedImage.save(fp="/Users/valeriepineaunoel/Desktop/stitchedImage.tiff")
