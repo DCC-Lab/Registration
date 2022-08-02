@@ -24,9 +24,9 @@ class Stitching(ImageTreatment):
 
 		# vertical (vShift) and horizontal (hShift)n shifts between the first image and its neighbours. 
 		#self.hShift = self.calculate_shift_PCC(index1=0, index2=1)
-		#self.vShift = self.calculate_shift_PCC(index1=0, index2=tileD[0])
+		#self.vShift = self.estimate_vertical_shift(index=0)
 
-	def calculate_coordinates_firstImage(self, tile):
+	def calculate_coordinates_firstImage(self, image):
 		"""
 		The first image is the only one that needs to consider the vertical and the horizontal shifts to be positioned properly. After positioning this first image, all the other images can be positioned according to one single image. 
 		Calculates the vertical (vShift) and horizontal (hShift) shifts with phase cross-correlation. 
@@ -34,9 +34,11 @@ class Stitching(ImageTreatment):
 		Verifies if the user wants to mirror the images. If so, the sign of the x coordinate changes. 
 		Returns the coordinates in [x, y]. 
 		"""
+
+		print(f"HSHIFT : {self.hShift}")
 		# if an x value is negative, it means the neighbouring image goes to the left, so the first image must be pushed to the right. 
 		if self.vShift[0] and self.hShift[0] < 0:
-			x = tile.size[0] - self.imageSize[0]
+			x = image.size[0] - self.imageSize[0]
 		elif self.hShift[0] < 0:
 			x = (self.tileD[1] - 1) * abs(self.hShift[0])
 		elif self.vShift[0] < 0:
@@ -46,7 +48,7 @@ class Stitching(ImageTreatment):
 
 		# if an y value is negative, it means the neighbouring image goes upwards, so the first image must be positioned downwards. 
 		if self.vShift[1] and self.hShift[1] < 0:
-			y = tile.size[1] - self.imageSize[1]
+			y = image.size[1] - self.imageSize[1]
 		elif self.hShift[1] < 0:
 			y = (self.tileD[0] - 1) * abs(self.hShift[1])
 		elif self.vShift[1] < 0: 
@@ -59,19 +61,24 @@ class Stitching(ImageTreatment):
 
 		return [int(x), int(y)]
 
-	def calculate_shift_PCC(self, index1:int, index2:int) -> list:
+	def calculate_shift_PCC(self, index1, index2) -> list:
 		"""
 		Input the indexes of two images in a set.
+		If index1 and index2 are int, opens the two images are numpy images. Else, it must be an image, pillow or numpy, that is input in the function. 
 		Calculates the spatial shift between two images using the phase cross-correlation.
 		Verifies if the user wants to mirror the images. If so, the sign of the x coordinate changes.
 		Returns a list corresponding to the shift [width,height], where a positive height corresponds to a shift to the bottom and a positive weight corresponds to a shift to the right.
 		"""
-		image1 = fman.read_file(filePath=self.directory + "/" + self.files[index1], imageType="numpy")
-		image2 = fman.read_file(filePath=self.directory + "/" + self.files[index2], imageType="numpy")
+		if type(index1) and type(index2) == int:
+			npimage1 = fman.read_file(filePath=self.directory + "/" + self.files[index1], imageType="numpy")
+			npimage2 = fman.read_file(filePath=self.directory + "/" + self.files[index2], imageType="numpy")
+		else: 
+			npimage1 = np.asarray(index1)
+			npimage2 = np.asarray(index2)
 
-		reverseShift, error, disphase = phase_cross_correlation(reference_image=image1, moving_image=image2)
+		reverseShift, error, disphase = phase_cross_correlation(reference_image=npimage1, moving_image=npimage2)
 		
-		if self.isMirrored == True:
+		if self.isMirrored == True and type(index1) == int:
 			shift = [-int(reverseShift[1]), int(reverseShift[0])]
 		else:
 			shift = [int(reverseShift[1]), int(reverseShift[0])]
@@ -99,19 +106,53 @@ class Stitching(ImageTreatment):
 
 		return
 
-	def create_tile_image(self):
+	def create_black_image(self, width=None, height=None):
 		"""
-		Calculates the size of the tile image. 
+		Calculates the size of the tile image.
+		If width and height are None, calculate the size of the image according to hShift and vShift. Else, any black image can be created with an input at width and height in pixels.  
 		Creates a 8-bit black PIL image of the size of the tile.  
 		Returns a 8-bit black PIL image. 
 		"""
-		width = self.imageSize[0] + (abs(self.hShift[0]) * (self.tileD[0]-1)) + abs(self.vShift[0]) + 100
-		height = self.imageSize[1] + (abs(self.vShift[1]) * (self.tileD[1]-1)) + abs(self.hShift[1]) + 100
+		if width is None and height is None: 
+			width = self.imageSize[0] + (abs(self.hShift[0]) * (self.tileD[0]-1)) + abs(self.vShift[0]) + 100
+			height = self.imageSize[1] + (abs(self.vShift[1]) * (self.tileD[1]-1)) + abs(self.hShift[1]) + 100
 
 		newImage = Image.new(mode="L", size=[width, height])
 	
 		return newImage
-	
+
+	def estimate_vertical_shift(self, index:int):
+		if index == 0: 
+			referenceIndex = 0
+			movingIndex = self.tileD[0]
+		else : 
+			referenceIndex = index-self.tileD[0]
+			movingIndex = index
+
+		noise1 = np.asarray(Image.effect_noise((self.imageSize[0], self.imageSize[1]-300), 12))
+		subNoise1 = self.subtract_value_on_all_pixels(value=100, image=noise1)
+		noiseImage1 = Image.fromarray(subNoise1)
+
+		noise2 = np.asarray(Image.effect_noise((self.imageSize[0], self.imageSize[1]-100), 50))
+		#subNoise2 = self.subtract_value_on_all_pixels(value=, image=noise2)
+		noiseImage2 = Image.fromarray(noise2)
+
+		reference = fman.read_file(filePath=self.directory + "/" + self.files[referenceIndex], imageType="PIL", mirror=self.isMirrored)
+		reference.paste(noiseImage1, (0, 0))
+		path = "/Users/valeriepineaunoel/Desktop/noiseImage1-" + str(referenceIndex) + ".tiff"
+		reference.save(fp=path)
+
+		moving = fman.read_file(filePath=self.directory + "/" + self.files[movingIndex], imageType="PIL", mirror=self.isMirrored)
+		moving.paste(noiseImage2, (0, 100))
+		path = "/Users/valeriepineaunoel/Desktop/noiseImage2-" + str(movingIndex) + ".tiff"
+		moving.save(fp=path)
+
+		shift = self.calculate_shift_PCC(index1=reference, index2=moving)
+		print(f"shift vertical : {shift}")
+
+		return shift
+
+
 	def merge_images_sidebyside(self, index1:int, index2:int):
 	    """
 	    Input the indexes of two images in a set. 
@@ -142,9 +183,9 @@ class Stitching(ImageTreatment):
 			Pastes the image on the background tile image. 
 		Returns the tile image with all the images pasted on it. 
 		"""
-		tile = self.create_tile_image()
+		tile = self.create_black_image()
 
-		firstImageCoordinates = self.calculate_coordinates_firstImage(tile=tile)
+		firstImageCoordinates = self.calculate_coordinates_firstImage(image=tile)
 		image = fman.read_file(filePath=self.directory + "/" + self.files[0], imageType="PIL", mirror=self.isMirrored)
 		tile.paste(image, (firstImageCoordinates[0], firstImageCoordinates[1]))
 		print(f"first image : {firstImageCoordinates}")
@@ -160,8 +201,7 @@ class Stitching(ImageTreatment):
 			while position[0] < self.tileD[0]: # rangées, x
 				# if first image of the row, use the image on top to calculate the shift
 				if position[0] == 0:
-					shift = self.calculate_shift_PCC(index1=i-self.tileD[0], index2=i)
-					print(f"shift 0 : {shift}")
+					shift = self.estimate_vertical_shift(index=i)
 					coordinates = [vCoordinates[0] + shift[0], vCoordinates[1] + shift[1]]
 					hCoordinates = [coordinates[0], coordinates[1]]
 					vCoordinates = [coordinates[0], coordinates[1]]
@@ -175,7 +215,6 @@ class Stitching(ImageTreatment):
 				image = fman.read_file(filePath=self.directory + "/" + self.files[i], imageType="PIL", mirror=self.isMirrored)
 				print(coordinates)
 				tile.paste(image, (coordinates[0], coordinates[1]))
-				print(coordinates)
 	
 				position[0] += 1
 				i += 1

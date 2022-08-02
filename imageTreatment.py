@@ -2,6 +2,7 @@ import filesManagement as fman
 import numpy as np
 import scipy.ndimage as simg
 import tifffile as tiff
+import math as math
 
 class ImageTreatment:
 	def __init__(self, sourceDir:str):
@@ -111,6 +112,24 @@ class ImageTreatment:
 
 		return inverseImage
 
+	def low_Pass_Filter(image, sigmaFilter):
+		"""
+		Creates a low-pass filter in the Fourier space. 
+		As an imput, 
+			- the image must be a numpy array;
+			- signamFilter defines the width of the filter.
+		Returns the Fourier-image of the filter. This should be multiplied by the FFT image to filter, then iFFT the product to recover the image.
+		"""
+		x, y = np.meshgrid(np.linspace(-1,1,image.shape[0]), np.linspace(-1,1,image.shape[1]))
+		d = np.sqrt(x*x+y*y)
+		sigma = (sigmaFilter*0.18)/(2*math.sqrt(2*math.log(2)))
+		mu = 0.0
+		gauss = (1/(sigma*2*np.pi)) * np.exp(-((d-mu)**2/(2.0*sigma**2)))
+		maxPixel = np.amax(gauss)
+		gaussNorm = gauss/maxPixel
+
+		return gaussNorm
+
 	def normalize_image(self, image):
 		""" 
 		Creates an image with pixels in float 64 varying form 0 to 1 according to the intensity of each pixels from the input image.
@@ -147,6 +166,24 @@ class ImageTreatment:
 			x += 1
 
 		return rescaledImage
+
+	def subtract_value_on_all_pixels(self, value, image):
+		"""
+		Takes a numpy image and a value to subtract in input. 
+		For each element in the image that are higher than the value to be subtracted, the value is subtracted from the value. 
+		Returns the subtracted image. 
+		"""
+		x = 0
+		y = 0
+		while y < image.shape[0]:
+			while x < image.shape[1]:
+				if image[y, x] > value:
+					image[y, x] = image[y, x] - value
+				x += 1
+			x = 0
+			y += 1
+
+		return image
 
 	def sum_pixels(self):
 		"""
