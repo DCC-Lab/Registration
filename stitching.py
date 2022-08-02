@@ -28,7 +28,7 @@ class Stitching(ImageTreatment):
 		self.hShift = self.calculate_shift_PCC(index1=0, index2=1)
 		self.vShift = self.estimate_shift(index=0, stitchingSide="V")
 
-	def calculate_coordinates_firstImage(self, image):
+	def calculate_coordinates_firstImage(self, background):
 		"""
 		The first image is the only one that needs to consider the vertical and the horizontal shifts to be positioned properly. After positioning this first image, all the other images can be positioned according to one single image. 
 		Calculates the vertical (vShift) and horizontal (hShift) shifts with phase cross-correlation. 
@@ -39,7 +39,7 @@ class Stitching(ImageTreatment):
 
 		# if an x value is negative, it means the neighbouring image goes to the left, so the first image must be pushed to the right. 
 		if self.vShift[0] < 0 and self.hShift[0] < 0:
-			x = image.size[0] - self.imageSize[0]
+			x = background.size[0] - self.imageSize[0]
 		elif self.hShift[0] < 0:
 			x = (self.tileD[1] - 1) * abs(self.hShift[0])
 		elif self.vShift[0] < 0:
@@ -49,7 +49,7 @@ class Stitching(ImageTreatment):
 
 		# if an y value is negative, it means the neighbouring image goes upwards, so the first image must be positioned downwards. 
 		if self.vShift[1] < 0 and self.hShift[1] < 0:
-			y = image.size[1] - self.imageSize[1]
+			y = background.size[1] - self.imageSize[1]
 		elif self.hShift[1] < 0:
 			y = (self.tileD[0] - 1) * abs(self.hShift[1])
 		elif self.vShift[1] < 0: 
@@ -214,7 +214,7 @@ class Stitching(ImageTreatment):
 		"""
 		tile = self.create_black_image()
 
-		firstImageCoordinates = self.calculate_coordinates_firstImage(image=tile)
+		firstImageCoordinates = self.calculate_coordinates_firstImage(background=tile)
 		image = fman.read_file(filePath=self.directory + "/" + self.files[0], imageType="PIL", mirror=self.isMirrored, flip=self.isFlipped)
 		tile.paste(image, (firstImageCoordinates[0], firstImageCoordinates[1]))
 		print(f"first image : {firstImageCoordinates}")
