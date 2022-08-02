@@ -65,29 +65,30 @@ class Stitching(ImageTreatment):
 	def calculate_shift_PCC(self, imageRef1, imageRef2) -> list:
 		"""
 		Input the indexes of two images in a set.
-		If index1 and index2 are int, opens the two images are numpy images. Else, it must be an image, pillow or numpy, that is input in the function. 
+		If indices are input, according images are fetched from an image list. Else, it must be an image, pillow or numpy, that is input in the function. 
 		Calculates the spatial shift between two images using the phase cross-correlation.
-		Verifies if the user wants to mirror and/or flip the images. If so, the sign of the x and/or y coordinates change.
+		Applies mirroring or flipping to the result if prompted to.
 		Returns a list corresponding to the shift [width,height], where a positive height corresponds to a shift to the bottom and a positive weight corresponds to a shift to the right.
 		"""
 		if type(imageRef1) and type(imageRef2) == int:
+			indexGiven = True
 			npimage1 = fman.read_file(filePath=self.directory + "/" + self.files[imageRef1], imageType="numpy")
 			npimage2 = fman.read_file(filePath=self.directory + "/" + self.files[imageRef2], imageType="numpy")
 		else: 
+			indexGiven = False
 			npimage1 = np.asarray(imageRef1)
 			npimage2 = np.asarray(imageRef2)
 
 		reverseShift, error, disphase = phase_cross_correlation(reference_image=npimage1, moving_image=npimage2)
 		
 		# the sign of the x and/or y values of shift might need some change according to the flip or mirror state. 
-		if self.isMirrored and type(imageRef1) == int:
-			shift = [-int(reverseShift[1]), int(reverseShift[0])]
-		elif self.isFlipped and type(imageRef1) == int:
-			shift = [int(reverseShift[1]), -int(reverseShift[0])]
-		elif self.isFlipped and self.isMirrored and type(imageRef1) == int:
-			shift = [-int(reverseShift[1]), -int(reverseShift[0])]
-		else:
-			shift = [int(reverseShift[1]), int(reverseShift[0])]
+		if indexGiven:
+			if self.isMirrored:
+				reverseShift[1] *= -1
+			if self.isFlipped:
+				reverseShift[0] *= -1
+
+		shift = [int(reverseShift[1]), int(reverseShift[0])]
 	
 		return shift
 
