@@ -2,6 +2,7 @@ import filesManagement as fman
 import numpy as np
 import scipy.ndimage as simg
 import tifffile as tiff
+import math as math
 
 class ImageTreatment:
 	def __init__(self, sourceDir:str):
@@ -110,6 +111,24 @@ class ImageTreatment:
 			x +=1
 
 		return inverseImage
+
+	def low_Pass_Filter(image, sigmaFilter):
+		"""
+		Creates a low-pass filter in the Fourier space. 
+		As an imput, 
+			- the image must be a numpy array;
+			- signamFilter defines the width of the filter.
+		Returns the Fourier-image of the filter. This should be multiplied by the FFT image to filter, then iFFT the product to recover the image.
+		"""
+		x, y = np.meshgrid(np.linspace(-1,1,image.shape[0]), np.linspace(-1,1,image.shape[1]))
+		d = np.sqrt(x*x+y*y)
+		sigma = (sigmaFilter*0.18)/(2*math.sqrt(2*math.log(2)))
+		mu = 0.0
+		gauss = (1/(sigma*2*np.pi)) * np.exp(-((d-mu)**2/(2.0*sigma**2)))
+		maxPixel = np.amax(gauss)
+		gaussNorm = gauss/maxPixel
+
+		return gaussNorm
 
 	def normalize_image(self, image):
 		""" 

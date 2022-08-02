@@ -23,8 +23,8 @@ class Stitching(ImageTreatment):
 		self.isMirrored = isMirrored
 
 		# vertical (vShift) and horizontal (hShift)n shifts between the first image and its neighbours. 
-		self.hShift = self.calculate_shift_PCC(index1=0, index2=1)
-		self.vShift = self.estimate_vertical_shift(index=0)
+		#self.hShift = self.calculate_shift_PCC(index1=0, index2=1)
+		#self.vShift = self.estimate_vertical_shift(index=0)
 
 	def calculate_coordinates_firstImage(self, image):
 		"""
