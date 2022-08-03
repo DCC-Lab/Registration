@@ -241,7 +241,6 @@ class Stitching(ImageTreatment):
 						#hCoordinates = [coordinates[0], coordinates[1]]
 						vCoordinates = coordinates
 						hCoordinates = coordinates
-						print(f"COOR : {vCoordinates} and {hCoordinates}")
 					else:
 						shift = self.estimate_shift(index=i, stitchingSide="V")
 						coordinates = [vCoordinates[0] + shift[0], vCoordinates[1] + shift[1]]
@@ -250,16 +249,12 @@ class Stitching(ImageTreatment):
 				# if not first image of the row, use the previous image to calcualte the shift
 				else:
 					shift = self.calculate_shift_PCC(imageRef1=i-1, imageRef2=i)
-					print(f"shift last : {shift}")
 					coordinates = [hCoordinates[0] + shift[0], hCoordinates[1] + shift[1]]
 					hCoordinates = [coordinates[0], coordinates[1]]
 
 				image = fman.read_file(filePath=self.directory + "/" + self.files[i], imageType="PIL", mirror=self.isMirrored, flip=self.isFlipped)
-				print(coordinates)
 				coords = coordinates
-				print(f"BEFORE PASTE : {coords}")
-				tile.paste(image, coordinates)
-				print(f"AFTER PASTE : {coords}")
+				tile.paste(image, (coordinates[0], coordinates[1]))
 	
 				i += 1
 	
