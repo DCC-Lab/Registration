@@ -3,6 +3,7 @@ import numpy as np
 import scipy.ndimage as simg
 import tifffile as tiff
 import math as math
+import matplotlib.pyplot as plt
 
 class ImageTreatment:
 	def __init__(self, sourceDir:str):
@@ -10,36 +11,39 @@ class ImageTreatment:
 
 		self.files = fman.list_name_of_files(directory=sourceDir)
 
-	def adjust_intensity(self, image, correction):
+	def adjust_intensity(self, image, correction, threshold:int=20):
 		""" 
 		Takes an image and multiplies each pixels by the corresponding pixel in the correction image. 
 		Returns the image corrected in intensity. 
 		"""
 		image = image.astype(np.float64)
-
-		x = 0
-		y = 0
-		while x < image.shape[0]:
-			while y < image.shape[1]: 
-				image[x][y] = image[x][y] * correction[x][y]
-				y += 1
-			y = 0
-			x += 1
-
+		image *= correction
 		new8bitImage = np.uint8(self.rescale_image(image))
 
-		# adjust the background for better contrast. Here the background is defined as any pixel under 20. 
-		x = 0
-		y = 0
-		while x < new8bitImage.shape[0]:
-			while y < new8bitImage.shape[1]:
-				if new8bitImage[x][y] < 20:
-					new8bitImage[x][y] = 0
-				y += 1
-			y = 0
-			x += 1
+		# adjust the background for better contrast. Here the background is defined as any pixel under 20.
+		thresholdIndices = new8bitImage < threshold
+		new8bitImage[thresholdIndices] = 0 
 
 		return new8bitImage
+
+	def apply_low_pass_filter(self, image):
+		"""
+		Applies a low-pass filter on the image given in input. 
+		Returns the filtered image. 
+		"""
+		# FFT of np.asarray
+		fftimage = np.fft.fftshift(np.fft.fft2(image))
+
+		# Create low-pass filter. 
+		lowPassFilter = self.low_Pass_Filter(image=image, sigmaFilter=1)
+
+		# Apply low-pass filters on respective cropped images. 
+		lowFFTimage = lowPassFilter * fftimage
+
+		# iFFT of low-passed cropped images. 
+		lowImage = np.fft.ifft2(np.fft.ifftshift(lowFFTimage))
+
+		return lowImage
 
 	def correct_intensity_envelop(self):
 		"""
@@ -63,7 +67,6 @@ class ImageTreatment:
 
 		return pathAfterCorrection, correctedFiles
 
-
 	def create_average_image(self):
 		"""
 		With the image directory, averages them all to produce a final image for correction. 
@@ -71,15 +74,7 @@ class ImageTreatment:
 		"""
 		pixels = self.sum_pixels()
 		numberOfImages = len(self.files)
-
-		x = 0
-		y = 0
-		while x < pixels.shape[0]:
-			while y < pixels.shape[1]:
-				pixels[x][y] = pixels[x][y]/numberOfImages 
-				y += 1
-			y = 0
-			x += 1
+		pixels = pixels/numberOfImages
 
 		return pixels
 
@@ -99,18 +94,10 @@ class ImageTreatment:
 		"""
 		Takes the input image and inverses the pixels (0s become 1s and 1s become 0s). 
 		"""
-		inverseImage = np.zeros(shape=(image.shape[0], image.shape[1]))
 		maxPixel = np.amax(image)
-		x = 0
-		y = 0
-		while x < image.shape[0]:
-			while y < image.shape[1]:
-				inverseImage[x][y] = maxPixel - image[x][y]
-				y += 1
-			y = 0
-			x +=1
+		image = maxPixel - image
 
-		return inverseImage
+		return image
 
 	def low_Pass_Filter(self, image, sigmaFilter):
 		"""
@@ -130,23 +117,35 @@ class ImageTreatment:
 
 		return gaussNorm
 
+	def merge_images_sidebyside(self, index1:int, index2:int):
+	    """
+	    Input the indexes of two images in a set. 
+	    Merge two images into one, displayed side by side.
+	    Returns the merged image object.
+	    """
+	    image1 = fman.read_file(filePath=self.directory + "/" + self.files[index1], imageType="PIL", mirror=self.isMirrored, flip=self.isFlipped)
+	    image2 = fman.read_file(filePath=self.directory + "/" + self.files[index2], imageType="PIL", mirror=self.isMirrored, flip=self.isFlipped)
+	
+	    (width1, height1) = image1.size
+	    (width2, height2) = image2.size
+	
+	    result_width = width1 + width2
+	    result_height = max(height1, height2)
+	
+	    result = Image.new('RGB', (result_width, result_height))
+	    result.paste(im=image1, box=(0, 0))
+	    result.paste(im=image2, box=(width1, 0))
+	    
+	    return result
+
 	def normalize_image(self, image):
 		""" 
 		Creates an image with pixels in float 64 varying form 0 to 1 according to the intensity of each pixels from the input image.
 		"""
-		newImage = np.zeros(shape=(image.shape[0], image.shape[1]))
 		maxPixel = np.amax(image)
+		image /= maxPixel
 
-		x = 0
-		y = 0
-		while x < image.shape[0]:
-			while y < image.shape[1]:
-				newImage[x][y] = image[x][y]/maxPixel
-				y += 1
-			y = 0
-			x += 1
-
-		return newImage
+		return image
 
 	def rescale_image(self, image, pixelRange=255):
 		"""
@@ -154,18 +153,9 @@ class ImageTreatment:
 		Rescales the image on the range defined with the variable pixelRange. 
 		"""
 		normImage = self.normalize_image(image=image)
-		rescaledImage = np.zeros(shape=(image.shape[0], image.shape[1]))
-		
-		x = 0
-		y = 0
-		while x < image.shape[0]:
-			while y < image.shape[1]:
-				rescaledImage[x][y] = normImage[x][y] * pixelRange
-				y += 1
-			y = 0
-			x += 1
+		normImage *= pixelRange
 
-		return rescaledImage
+		return normImage
 
 	def subtract_value_on_all_pixels(self, value, image):
 		"""
@@ -173,15 +163,7 @@ class ImageTreatment:
 		For each element in the image that are higher than the value to be subtracted, the value is subtracted from the value. 
 		Returns the subtracted image. 
 		"""
-		x = 0
-		y = 0
-		while y < image.shape[0]:
-			while x < image.shape[1]:
-				if image[y, x] > value:
-					image[y, x] = image[y, x] - value
-				x += 1
-			x = 0
-			y += 1
+		image -= value
 
 		return image
 
@@ -190,26 +172,14 @@ class ImageTreatment:
 		Reads all images in directory and sums the value of each pixels. 
 		Returns an image with the sum of all pixels. 
 		"""
-		firstPath = self.sourceDir + "/" + self.files[0]
-		firstImage = fman.read_file(filePath=firstPath, imageType="numpy")
-
-		pixels = np.zeros(shape=(firstImage.shape[0], firstImage.shape[1]), dtype=np.float64)
-
-		i = 0
+		allImages = []
 		for name in self.files:
-			#filePath = self.sourceDir + "/" + name
 			image = fman.read_file(filePath=self.sourceDir + "/" + name, imageType="numpy")
-			x = 0
-			y = 0
-			while x < firstImage.shape[0]:
-				while y < firstImage.shape[1]:
-					pixels[x][y] = pixels[x][y] + image[x][y]
-					y += 1
-				y = 0
-				x += 1
-			i += 1
+			allImages.append(image)	
+		allImages = np.dstack(tuple(allImages))
+		sumImage = np.sum(allImages, axis=2)
 
-		return pixels
+		return sumImage
 
 
 
