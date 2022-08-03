@@ -240,8 +240,6 @@ class Stitching(ImageTreatment):
 				if x == 0:
 					if y == 0:
 						coordinates = self.calculate_coordinates_firstImage(background=tile)
-						#vCoordinates = [coordinates[0], coordinates[1]]
-						#hCoordinates = [coordinates[0], coordinates[1]]
 						vCoordinates = coordinates
 						hCoordinates = coordinates
 					else:
@@ -252,11 +250,9 @@ class Stitching(ImageTreatment):
 				# if not first image of the row, use the previous image to calcualte the shift
 				else:
 					shift = self.estimate_shift(index=i, stitchingSide="H")
-					#shift = self.calculate_shift_PCC(imageRef1=i-1, imageRef2=i)
 					coordinates = [hCoordinates[0] + shift[0], hCoordinates[1] + shift[1]]
 					hCoordinates = coordinates
 
-				print(f"h and v Coordinates : {hCoordinates} and {vCoordinates}")
 				image = fman.read_file(filePath=self.directory + "/" + self.files[i], imageType="PIL", mirror=self.isMirrored, flip=self.isFlipped)
 				coords = coordinates
 				tile.paste(image, (coordinates[0], coordinates[1]))
