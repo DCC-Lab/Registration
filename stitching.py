@@ -244,13 +244,13 @@ class Stitching(ImageTreatment):
 					else:
 						shift = self.estimate_shift(index=i, stitchingSide="V")
 						coordinates = [vCoordinates[0] + shift[0], vCoordinates[1] + shift[1]]
-						hCoordinates = [coordinates[0], coordinates[1]]
-						vCoordinates = [coordinates[0], coordinates[1]]
+						hCoordinates = coordinates
+						vCoordinates = coordinates
 				# if not first image of the row, use the previous image to calcualte the shift
 				else:
 					shift = self.calculate_shift_PCC(imageRef1=i-1, imageRef2=i)
 					coordinates = [hCoordinates[0] + shift[0], hCoordinates[1] + shift[1]]
-					hCoordinates = [coordinates[0], coordinates[1]]
+					hCoordinates = coordinates
 
 				image = fman.read_file(filePath=self.directory + "/" + self.files[i], imageType="PIL", mirror=self.isMirrored, flip=self.isFlipped)
 				coords = coordinates
