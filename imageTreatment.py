@@ -35,7 +35,7 @@ class ImageTreatment:
 		fftimage = np.fft.fftshift(np.fft.fft2(image))
 
 		# Create low-pass filter. 
-		lowPassFilter = self.low_Pass_Filter(image=image, sigmaFilter=1)
+		lowPassFilter = self.low_Pass_Filter(image=image, sigmaFilter=10)
 
 		# Apply low-pass filters on respective cropped images. 
 		lowFFTimage = lowPassFilter * fftimage
