@@ -3,3 +3,4 @@ __pycache__/filesManagement.cpython-39.pyc
 __pycache__/imageTreatment.cpython-39.pyc
 __pycache__/stitching.cpython-39.pyc
 __pycache__/exceptions.cpython-39.pyc
+.DS_Store
