@@ -5,21 +5,7 @@ import tifffile as tiff
 sourcePath = "/Users/valeriepineaunoel/Library/Mobile Documents/com~apple~CloudDocs/Documents/Stitching-Scrapbooking/tests/testDataset"
 tileDimensions = [2, 3]
 
-#img = ImageTreatment(sourceDir=sourcePath)
-#
-#average = img.create_average_image()
-#tiff.imwrite("/Users/valeriepineaunoel/Desktop/average.tiff", average)
-#
-#inv = img.inverse_pixels(image=average)
-#tiff.imwrite("/Users/valeriepineaunoel/Desktop/inv.tiff", inv)
-#res = img.rescale_image(image=inv)
-#tiff.imwrite("/Users/valeriepineaunoel/Desktop/rescale.tiff", res)
-#corr = img.create_intensity_correction_image(image=average)
-#tiff.imwrite("/Users/valeriepineaunoel/Desktop/corr.tiff", corr)
-#
-#enveloppe = img.correct_intensity_envelop()
-
-stitch = Stitching(sourceDir=sourcePath, tileD=tileDimensions, imageSize=[1024,512], isIntensityCorrection=False, isMirrored=True, isFlipped=False)
+stitch = Stitching(sourceDir=sourcePath, tileD=tileDimensions, imageSize=[1024,512], isIntensityCorrection=False, shiftEstimation="FFTConvolution", isMirrored=True, isFlipped=False)
 stitchedImage = stitch.stitching_scrapbooking_allImages()
 plt.imshow(stitchedImage)
 plt.show()

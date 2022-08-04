@@ -10,7 +10,7 @@ from imageTreatment import *
 #from typing import *
 
 class Stitching(ImageTreatment):
-	def __init__(self, sourceDir:str, tileD:list, imageSize:list, isIntensityCorrection:bool = False, shiftEstimation:str = "PCC", isMirrored:bool = False, isFlipped:bool = False):
+	def __init__(self, sourceDir:str, tileD:list, imageSize:list, isIntensityCorrection:bool = True, shiftEstimation:str = "PCC", isMirrored:bool = False, isFlipped:bool = False):
 		super().__init__(sourceDir=sourceDir)
 		if isIntensityCorrection:
 			# if true, the directory we are interested in is actually the one with intensity-corrected images. 
@@ -25,7 +25,7 @@ class Stitching(ImageTreatment):
 		self.isFlipped = isFlipped
 
 		# vertical (vShift) and horizontal (hShift) shifts between the first image and its neighbours. 
-		self.hShift = self.estimate_shift(index=0, stitchingSide="H", shiftMethod=self.shiftEstimation)
+		self.hShift = self.calculate_shift_PCC(imageRef1=0, imageRef2=1)
 		self.vShift = self.estimate_shift(index=0, stitchingSide="V", shiftMethod=self.shiftEstimation)
 
 	def calculate_coordinates_firstImage(self, background):
@@ -36,6 +36,7 @@ class Stitching(ImageTreatment):
 		Verifies if the user wants to mirror the images. If so, the sign of the x coordinate changes. 
 		Returns the coordinates in [x, y]. 
 		"""
+		print(f"h and v : {self.hShift} and {self.vShift}")
 
 		# if an x value is negative, it means the neighbouring image goes to the left, so the first image must be pushed to the right. 
 		if self.vShift[0] < 0 and self.hShift[0] < 0:
@@ -117,7 +118,7 @@ class Stitching(ImageTreatment):
 		maxPeakShift = np.unravel_index(np.argmax(relative_shift), relative_shift.shape)
 		maxPeakAutocorr = np.unravel_index(np.argmax(autocorr), autocorr.shape)
 
-		shift = list(map(lambda i, j: i - j, maxPeakAutocorr, maxPeakShift))
+		shift = list(map(lambda i, j: j - i, maxPeakAutocorr, maxPeakShift))
 
 		if index_given:
 			if self.isMirrored:
@@ -125,7 +126,8 @@ class Stitching(ImageTreatment):
 			if self.isFlipped:
 				shift[0] *= -1
 
-		shift = [shift[1], shift[0]]
+		shift = [int(shift[1]), int(shift[0])]
+		print(f"SHIFT FFT CONVOLUTION : {shift}")
 		return shift
 
 	def create_black_image(self, width=None, height=None):
@@ -135,13 +137,11 @@ class Stitching(ImageTreatment):
 		Creates a 8-bit black PIL image of the size of the tile.  
 		Returns a 8-bit black PIL image. 
 		"""
-		print(f"h and v : {self.hShift} and {self.vShift}")
 		if width is None and height is None: 
 			width = self.imageSize[0] + (abs(self.hShift[0]) * (self.tileD[0]-1)) + abs(self.vShift[0]) + 100
 			height = self.imageSize[1] + (abs(self.vShift[1]) * (self.tileD[1]-1)) + abs(self.hShift[1]) + 100
 
 		newImage = Image.new(mode="L", size=[width, height])
-		print(f"W AND H : {width} and {height}")
 	
 		return newImage
 
