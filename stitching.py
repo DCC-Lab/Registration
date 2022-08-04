@@ -5,7 +5,6 @@ from skimage.registration import phase_cross_correlation
 import tifffile as tiff
 from scipy.signal import fftconvolve
 
-import exceptions as exc
 import filesManagement as fman
 from imageTreatment import *
 #from typing import *
@@ -169,8 +168,7 @@ class Stitching(ImageTreatment):
 			movingIndex = index+1
 
 		else:
-			exc.define_variable(stitchingSide)
-			exc.define_variable(index)
+			raise Exception("Verify that all arguments are defined to estimate shift.")
 
 		reference = fman.read_file(filePath=self.directory + "/" + self.files[referenceIndex], imageType="PIL", mirror=self.isMirrored, flip=self.isFlipped)
 		moving = fman.read_file(filePath=self.directory + "/" + self.files[movingIndex], imageType="PIL", mirror=self.isMirrored, flip=self.isFlipped)
