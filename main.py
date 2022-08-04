@@ -2,7 +2,7 @@ from stitching import *
 from imageTreatment import *
 import tifffile as tiff
 
-sourcePath = "/Users/valeriepineaunoel/Desktop/20220621-6umPolystyreneBeads-overlap10%-zoom2/LineCorrection"
+sourcePath = "/Users/valeriepineaunoel/Desktop/20220621-6umPolystyreneBeads-overlap10%-zoom2/LineCorrection/IntensityCorrection"
 tileDimensions = [6, 4]
 
 #img = ImageTreatment(sourceDir=sourcePath)
@@ -19,7 +19,7 @@ tileDimensions = [6, 4]
 #
 #enveloppe = img.correct_intensity_envelop()
 
-stitch = Stitching(sourceDir=sourcePath, tileD=tileDimensions, imageSize=[1024,512], isIntensityCorrection=True, isMirrored=True, isFlipped=False)
+stitch = Stitching(sourceDir=sourcePath, tileD=tileDimensions, imageSize=[1024,512], isIntensityCorrection=False, isMirrored=True, isFlipped=False)
 stitchedImage = stitch.stitching_scrapbooking_allImages()
 plt.imshow(stitchedImage)
 plt.show()
