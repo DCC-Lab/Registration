@@ -74,7 +74,7 @@ class TestStitching(unittest.TestCase):
 			self.assertIsInstance(shift, list)
 
 		with self.subTest("Vertical shift estimation with FFT convolution returns a list."):
-			shift = stitcherPCC.estimate_shift(index=0, stitchingSide="V", shiftMethod="FFTConvolution")
+			shift = stitcherConv.estimate_shift(index=0, stitchingSide="V", shiftMethod="FFTConvolution")
 			self.assertIsInstance(shift, list)
 
 		with self.subTest("Vertical shift estimation with PCC returns a list of two elements."):
@@ -82,7 +82,7 @@ class TestStitching(unittest.TestCase):
 			self.assertEqual(len(shift), 2)
 
 		with self.subTest("Vertical shift estimation with FFT convolution returns a list of two elements."):
-			shift = stitcherPCC.estimate_shift(index=0, stitchingSide="V", shiftMethod="FFTConvolution")
+			shift = stitcherConv.estimate_shift(index=0, stitchingSide="V", shiftMethod="FFTConvolution")
 			self.assertEqual(len(shift), 2)
 
 		with self.subTest("Vertical shift estimation with PCC returns a valid x-shift."):
@@ -90,7 +90,7 @@ class TestStitching(unittest.TestCase):
 			self.assertTrue(22 <= shift[0] <= 32)
 
 		with self.subTest("Vertical shift estimation with FFT convolution returns a valid x-shift."):
-			shift = stitcherPCC.estimate_shift(index=0, stitchingSide="V", shiftMethod="FFTConvolution")
+			shift = stitcherConv.estimate_shift(index=0, stitchingSide="V", shiftMethod="FFTConvolution")
 			self.assertTrue(22 <= shift[0] <= 32)
 
 		with self.subTest("Vertical shift estimation with PCC returns a valid y-shift."):
@@ -98,9 +98,33 @@ class TestStitching(unittest.TestCase):
 			self.assertTrue(296 <= shift[1] <= 306)
 
 		with self.subTest("Vertical shift estimation with FFT convolution returns a valid y-shift."):
-			shift = stitcherPCC.estimate_shift(index=0, stitchingSide="V", shiftMethod="FFTConvolution")
+			shift = stitcherConv.estimate_shift(index=0, stitchingSide="V", shiftMethod="FFTConvolution")
 			self.assertTrue(296 <= shift[1] <= 306)
 
+	def test_PCCAndFFTConvolutionShifts(self):
+		with self.subTest("Vertical shift estimations with PCC and FFT convolution give approximately the same result for x-shift."):
+			shiftPCC = stitcherPCC.estimate_shift(index=0, stitchingSide="V", shiftMethod="PCC")
+			shiftConv = stitcherConv.estimate_shift(index=0, stitchingSide="V", shiftMethod="FFTConvolution")
+			deltaX = abs(shiftPCC[0]-shiftConv[0])
+			self.assertTrue(deltaX <= 10)
+
+		with self.subTest("Vertical shift estimations with PCC and FFT convolution give approximately the same result for y-shift."):
+			shiftPCC = stitcherPCC.estimate_shift(index=0, stitchingSide="V", shiftMethod="PCC")
+			shiftConv = stitcherConv.estimate_shift(index=0, stitchingSide="V", shiftMethod="FFTConvolution")
+			deltaY = abs(shiftPCC[1]-shiftConv[1])
+			self.assertTrue(deltaY <= 10)
+
+		with self.subTest("Horizontal shift estimations with PCC and FFT convolution give approximately the same result for x-shift."):
+			shiftPCC = stitcherPCC.calculate_shift_PCC(imageRef1=0, imageRef2=1)
+			shiftConv = stitcherConv.calculate_shift_convolution(imageRef1=0, imageRef2=1)
+			deltaX = abs(shiftPCC[0]-shiftConv[0])
+			self.assertTrue(deltaX <= 10)
+
+		with self.subTest("Horizontal shift estimations with PCC and FFT convolution give approximately the same result for y-shift."):
+			shiftPCC = stitcherPCC.calculate_shift_PCC(imageRef1=0, imageRef2=1)
+			shiftConv = stitcherConv.calculate_shift_convolution(imageRef1=0, imageRef2=1)
+			deltaY = abs(shiftPCC[1]-shiftConv[1])
+			self.assertTrue(deltaY <= 10)
 
 if __name__ == "__main__":
      unittest.main()
