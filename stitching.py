@@ -10,7 +10,7 @@ from imageTreatment import *
 #from typing import *
 
 class Stitching(ImageTreatment):
-	def __init__(self, sourceDir:str, tileD:list, imageSize:list, isIntensityCorrection:bool = True, shiftEstimation:str = "PCC", isMirrored:bool = False, isFlipped:bool = False, verticalShift:list = None, horizontalShift:list = None, knownShift:bool=False):
+	def __init__(self, sourceDir:str, tileD:list, imageSize:list, isIntensityCorrection:bool = True, shift = None, isMirrored:bool = False, isFlipped:bool = False):
 		super().__init__(sourceDir=sourceDir)
 		if isIntensityCorrection:
 			# if true, the directory we are interested in is actually the one with intensity-corrected images. 
@@ -20,16 +20,58 @@ class Stitching(ImageTreatment):
 
 		self.tileD = tileD
 		self.imageSize = imageSize
-		self.shiftEstimation = shiftEstimation
 		self.isMirrored = isMirrored
 		self.isFlipped = isFlipped
 
 		# vertical (vShift) and horizontal (hShift) shifts between the first image and its neighbours.
-		if verticalShift is False and horizontalShift is False: 
-			self.hShift = self.calculate_shift_PCC(imageRef1=0, imageRef2=1)
-			self.vShift = self.estimate_shift(index=0, stitchingSide="V", shiftMethod=self.shiftEstimation)
+		if shift is None:
+			shiftMethod = input("Which stitching method do you want to use (Answer 1, 2, 3 or 4): \r 1. Estimate the shift with phase cross-correlation. \n 2. Estimate the shift with FFT convolution \n 3. Use the position in the file name. \n 4. Use a predefined shift.")
+			if shiftMethod == "1":
+				self.hShift = self.calculate_shift_PCC(imageRef1=0, imageRef2=1)
+				self.vShift = self.estimate_shift(index=0, stitchingSide="V", shiftMethod="PCC")
+				image = self.stitch_with_estimated_shift(shiftMethod="PCC")
+				self.save_image(image)
+			elif shiftMethod == "2":
+				self.hShift = self.calculate_shift_convolution(imageRef1=0, imageRef2=1)
+				self.vShift = self.estimate_shift(index=0, stitchingSide="V", shiftMethod="FFTConvolution")
+				image = self.stitch_with_estimated_shift(shiftMethod="FFTConvolution")
+				self.save_image(image)
+			elif shiftMethod == "3":
+				self.hShift = self.calculate_shift_from_file_name(imageRef1=0, imageRef2=1)
+				self.vShift = self.calculate_shift_from_file_name(imageRef1=0, imageRef2=self.tileD[0]+1)
+				image = self.stitch_with_position_in_file_name()
+				self.save_image(image)
+			elif shiftMethod == "4":
+				hx, hy = input("Please enter the x and y values of the HORIZONTAL shift (x, y):")
+				vx, vy = input("Please enter the x and y values of the VERTICAL shift (x, y):")
+				self.hShift = [hx, hy]
+				self.vShift = [vx, vy]
+				image = self.stitch_with_known_shifts()
+				self.save_image(image)
+
 		else:
-			self.hShift = self.calculate_shift_from_file_name(imageRef1=0, imageRef2=1)
+			if shift == "PCC":
+				self.hShift = self.calculate_shift_PCC(imageRef1=0, imageRef2=1)
+				self.vShift = self.estimate_shift(index=0, stitchingSide="V", shiftMethod="PCC")
+				image = self.stitch_with_estimated_shift(shiftMethod="PCC")
+				self.save_image(image)
+			elif shiftMethod == "FFTConvolution":
+				self.hShift = self.calculate_shift_convolution(imageRef1=0, imageRef2=1)
+				self.vShift = self.estimate_shift(index=0, stitchingSide="V", shiftMethod="FFTConvolution")
+				image = self.stitch_with_estimated_shift(shiftMethod="FFTConvolution")
+				self.save_image(image)
+			elif shiftMethod == "FileName":
+				self.hShift = self.calculate_shift_from_file_name(imageRef1=0, imageRef2=1)
+				self.vShift = self.calculate_shift_from_file_name(imageRef1=0, imageRef2=self.tileD[0]+1)
+				image = self.stitch_with_position_in_file_name()
+				self.save_image(image)
+			elif shiftMethod == "Manual":
+				hx, hy = input("Please enter the x and y values of the HORIZONTAL shift (x, y):")
+				vx, vy = input("Please enter the x and y values of the VERTICAL shift (x, y):")
+				self.hShift = [hx, hy]
+				self.vShift = [vx, vy]
+				image = self.stitch_with_known_shifts()
+				self.save_image(image)
 
 
 	def average_shifts(self, allShifts):
@@ -83,6 +125,7 @@ class Stitching(ImageTreatment):
 
 	def calculate_shift_from_file_name(self, imageRef1, imageRef2):
 		"""
+		TODO : USE THIS AS A WAY TO ACTUALLY STITCH THE STUFF
 		Finds the position of the image at indexes imageRef1 and imageRef2 from their file name. 
 		Indeed, when images are acquired with Nirvana, the file name includes the position of the image. 
 		By extracting this position in x and y, it would be possible to know the exact shift between two images. 
@@ -146,7 +189,10 @@ class Stitching(ImageTreatment):
 
 		positionMoving = [float(xMoving), float(yMoving)]
 
-		shift = [positionRef[0]-positionMoving[0], positionRef[1]-positionMoving[1]]
+		if self.isMirrored:
+			shift = [-int(positionRef[0]-positionMoving[0]), int(positionRef[1]-positionMoving[1])]
+		else:
+			shift = [int(positionRef[0]-positionMoving[0]), int(positionRef[1]-positionMoving[1])]
 
 		return shift
 
@@ -305,8 +351,70 @@ class Stitching(ImageTreatment):
 
 		return shift
 
+	def save_image(self, image):
+		a = input("Want to save? (Answer y/n)")
+		if a == "y":
+			name = input("How do you want to name the stitched image?")
+			path = "/Users/valeriepineaunoel/Desktop/" + name + ".tiff"
+			image.save(fp=path, format="TIFF", subsampling=0, quality=100)
+			print(fr"Saved as {path}")
 
-	def stitching_with_known_shifts(self):
+
+	def stitch_with_position_in_file_name(self): 
+		"""
+		Stitch images according to a known shift between images.
+		Creates the background tile image of the right size. 
+		Pastes the first image at the top-left corner. 
+		For all images of the list of files : 
+			Calculates the [x,y] coordinates (pixels) according to a known shift where the top-left pixel of the image has to be pasted. 
+			Opens the image in PIL. 
+			Pastes the image on the background tile image. 
+		Returns the tile image with all the images pasted on it.
+		"""
+
+		tile = self.create_black_image()
+
+		i = 0
+
+		for y in range(self.tileD[1]): # rangées, y
+			for x in range(self.tileD[0]): # colonnes, x
+				# if first image of the row, use the image on top to calculate the shift
+				if x == 0:
+					if y == 0:
+						coordinates = [0,0]						
+						vCoordinates = coordinates
+						hCoordinates = coordinates
+					else:
+						shift = self.calculate_shift_from_file_name(imageRef1=i, imageRef2=i-self.tileD[0])
+						coordinates = [vCoordinates[0] + shift[0], vCoordinates[1] + shift[1]]
+						hCoordinates = coordinates
+						vCoordinates = coordinates
+				# if not first image of the row, use the previous image to calcualte the shift
+				else:
+					shift = self.calculate_shift_from_file_name(imageRef1=i-1, imageRef2=i)
+					coordinates = [hCoordinates[0] + shift[0], hCoordinates[1] + shift[1]]
+					hCoordinates = coordinates
+
+				image = fman.read_file(filePath=self.directory + "/" + self.files[i], imageType="PIL", mirror=self.isMirrored, flip=self.isFlipped)
+				coords = coordinates
+				tile.paste(image, (coordinates[0], coordinates[1]))
+	
+				i += 1
+	
+		return tile
+
+
+	def stitch_with_known_shifts(self):
+		"""
+		Stitch images according to a known shift between images.
+		Creates the background tile image of the right size. 
+		Pastes the first image at the top-left corner. 
+		For all images of the list of files : 
+			Calculates the [x,y] coordinates (pixels) according to a known shift where the top-left pixel of the image has to be pasted. 
+			Opens the image in PIL. 
+			Pastes the image on the background tile image. 
+		Returns the tile image with all the images pasted on it.
+		"""
 
 		tile = self.create_black_image()
 
@@ -340,20 +448,21 @@ class Stitching(ImageTreatment):
 		return tile
 
 
-	def stitching_scrapbooking_allImages(self):
+	def stitch_with_estimated_shift(self, shiftMethod):
 		""" 
+		Stitch images by estimating the shift for each image. 
 		Creates the background tile image of the right size. 
-		Calculates the coordinates of the first image according to its two neighbouring images. 
+		Estimates the coordinates of the first image according to its two neighbouring images. 
 		For all images of the list of files : 
-			Calculates the [x,y] coordinates (pixels) where the top-left pixel of the image has to be pasted. 
+			Calculates the [x,y] coordinates (pixels) according to the estimated shift done by the method of choice where the top-left pixel of the image has to be pasted. 
 			Opens the image in PIL. 
 			Pastes the image on the background tile image. 
-		Returns the tile image with all the images pasted on it. 
+		Calculates the average vertical and horizontal shifts. 
+		Returns the tile image with all the images pasted on it, the mean horizontal shift and the mean vertical shift. 
 		"""
 		tile = self.create_black_image()
 
 		i = 0
-		print(f"I am looking at image number {i}")
 		allVerticalShifts = []
 		allHorizontalShifts = []
 
@@ -366,7 +475,7 @@ class Stitching(ImageTreatment):
 						vCoordinates = coordinates
 						hCoordinates = coordinates
 					else:
-						shift = self.estimate_shift(index=i, stitchingSide="V", shiftMethod=self.shiftEstimation)
+						shift = self.estimate_shift(index=i, stitchingSide="V", shiftMethod=shiftMethod)
 						allVerticalShifts.append(shift)
 
 						coordinates = [vCoordinates[0] + shift[0], vCoordinates[1] + shift[1]]
@@ -374,7 +483,7 @@ class Stitching(ImageTreatment):
 						vCoordinates = coordinates
 				# if not first image of the row, use the previous image to calcualte the shift
 				else:
-					shift = self.estimate_shift(index=i, stitchingSide="H", shiftMethod=self.shiftEstimation)
+					shift = self.estimate_shift(index=i, stitchingSide="H", shiftMethod=shiftMethod)
 					allHorizontalShifts.append(shift)
 
 					coordinates = [hCoordinates[0] + shift[0], hCoordinates[1] + shift[1]]
