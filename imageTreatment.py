@@ -72,7 +72,6 @@ class ImageTreatment:
 			correctedImage = self.adjust_intensity(image=image, correction=correctionImage)
 			newFileName = pathAfterCorrection + "/" + "ADJ" + file 
 			tiff.imwrite(newFileName, correctedImage)
-			print(f"Correct intensity envelope of image {file}")
 
 		correctedFiles = fman.list_name_of_files(directory=pathAfterCorrection)
 

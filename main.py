@@ -2,11 +2,11 @@ from stitching import *
 from imageTreatment import *
 import tifffile as tiff
 
-sourcePath = "/Users/valeriepineaunoel/Desktop/testImages/IntensityCorrection"
-tileDimensions = [2, 3]
+sourcePath = "/Users/valeriepineaunoel/Desktop/20220621-20%-334A-1/LineCorrection"
+tileDimensions = [11, 3]
 
-stitch = Stitching(sourceDir=sourcePath, tileD=tileDimensions, imageSize=[1024,512], isIntensityCorrection=False, shiftEstimation="PCC", isMirrored=True, isFlipped=False)
-stitchedImage = stitch.stitching_scrapbooking_allImages()
+stitch = Stitching(sourceDir=sourcePath, tileD=tileDimensions, imageSize=[1024,512], isIntensityCorrection=True, shiftEstimation="PCC", isMirrored=True, isFlipped=False, horizontalShift=[162, -13], verticalShift=[35, 345])
+stitchedImage = stitch.stitching_with_known_shifts()
 plt.imshow(stitchedImage)
 plt.show()
 a = input("Want to save? (Answer y/n)")
