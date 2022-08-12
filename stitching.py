@@ -10,7 +10,7 @@ from imageTreatment import *
 #from typing import *
 
 class Stitching(ImageTreatment):
-	def __init__(self, sourceDir:str, tileD:list, imageSize:list, isIntensityCorrection:bool = False, isMirrored:bool = False, isFlipped:bool = False):
+	def __init__(self, sourceDir:str, tileD:list, imageSize:list, isIntensityCorrection:bool = True, shiftEstimation:str = "PCC", isMirrored:bool = False, isFlipped:bool = False, verticalShift:list = None, horizontalShift:list = None, knownShift:bool=False):
 		super().__init__(sourceDir=sourceDir)
 		if isIntensityCorrection:
 			# if true, the directory we are interested in is actually the one with intensity-corrected images. 
@@ -20,12 +20,29 @@ class Stitching(ImageTreatment):
 
 		self.tileD = tileD
 		self.imageSize = imageSize
+		self.shiftEstimation = shiftEstimation
 		self.isMirrored = isMirrored
 		self.isFlipped = isFlipped
 
-		# vertical (vShift) and horizontal (hShift) shifts between the first image and its neighbours. 
-		self.hShift = self.calculate_shift_PCC(imageRef1=0, imageRef2=1)
-		self.vShift = self.estimate_shift(index=0, stitchingSide="V")
+		# vertical (vShift) and horizontal (hShift) shifts between the first image and its neighbours.
+		if verticalShift is False and horizontalShift is False: 
+			self.hShift = self.calculate_shift_PCC(imageRef1=0, imageRef2=1)
+			self.vShift = self.estimate_shift(index=0, stitchingSide="V", shiftMethod=self.shiftEstimation)
+		else:
+			self.hShift = self.calculate_shift_from_file_name(imageRef1=0, imageRef2=1)
+
+
+	def average_shifts(self, allShifts):
+		"""
+		Input a list of shifts [x,y] and returns the average of all the shifts element-wise. 
+		"""
+		length = len(allShifts)
+		allShifts = np.dstack(tuple(allShifts))
+		sumAllShifts = np.sum(allShifts, axis=2)
+		average = sumAllShifts/length
+		average = [int(average[0][0]), int(average[0][1])]
+
+		return average
 
 	def calculate_coordinates_firstImage(self, background):
 		"""
@@ -35,6 +52,7 @@ class Stitching(ImageTreatment):
 		Verifies if the user wants to mirror the images. If so, the sign of the x coordinate changes. 
 		Returns the coordinates in [x, y]. 
 		"""
+		print(f"h and v : {self.hShift} and {self.vShift}")
 
 		# if an x value is negative, it means the neighbouring image goes to the left, so the first image must be pushed to the right. 
 		if self.vShift[0] < 0 and self.hShift[0] < 0:
@@ -59,7 +77,79 @@ class Stitching(ImageTreatment):
 		if self.isMirrored == True:
 			x = -x
 
+		print(f"First image coordinates done.")
+
 		return [int(x), int(y)]
+
+	def calculate_shift_from_file_name(self, imageRef1, imageRef2):
+		"""
+		Finds the position of the image at indexes imageRef1 and imageRef2 from their file name. 
+		Indeed, when images are acquired with Nirvana, the file name includes the position of the image. 
+		By extracting this position in x and y, it would be possible to know the exact shift between two images. 
+		Ex : 
+			file name 1 is ADJCORR20220620-334B-1A-Cryoprotectant-Ave30-tiling-zoom2-004-Bliq VMS-Ch-2-Ch 2-VOI_1-Slice_180-X001-Y180-Z001-(X11465.31-Y5069.28-Z4374.00)-Time_238.163s-Frame_007260-Projection_Average.tif
+			The index 112 is the parenthesis where the information related to the image position starts (X11465.31-Y5069.28-Z4374.00).
+			file name 2 is ADJCORR20220620-334B-1A-Cryoprotectant-Ave30-tiling-zoom2-004-Bliq VMS-Ch-2-Ch 2-VOI_1-Slice_181-X001-Y181-Z001-(X11465.31-Y5094.52-Z4374.00)-Time_239.347s-Frame_007297-Projection_Average.tif
+			The index 112 is the parenthesis where the information related to the image position starts (X11465.31-Y5094.52-Z4374.00).
+			Use this information to know the shift between image 1 and 2 (0, -25.24). 
+		We know that the X- and Y-axis are inversed, so X is actually Y and vice versa. 
+		"""
+		npimage1 = fman.read_file(filePath=self.directory + "/" + self.files[imageRef1], imageType="numpy")
+		npimage2 = fman.read_file(filePath=self.directory + "/" + self.files[imageRef2], imageType="numpy")
+
+		nameRef = self.files[imageRef1]
+		nameMoving = self.files[imageRef2]
+
+		stringIndexRef = nameRef.find("(X") # should be 112 with ADJ
+		yRef = ""
+		i = stringIndexRef + 2
+		isAPosition = True
+		while isAPosition:
+			if nameRef[i].isnumeric() or nameRef[i] == ".":
+				yRef += nameRef[i]
+				i += 1
+			else:
+				isAPosition = False
+		
+		xRef = ""
+		i += 2
+		isAPosition = True
+		while isAPosition:
+			if nameRef[i].isnumeric() or nameRef[i] == ".":
+				xRef += nameRef[i]
+				i += 1
+			else:
+				isAPosition = False
+
+		positionRef = [float(xRef), float(yRef)]
+
+		stringIndexMoving = nameMoving.find("(X") # should be 112 with ADJ
+		yMoving = ""
+		i = stringIndexMoving + 2
+		isAPosition = True
+		while isAPosition:
+			if nameMoving[i].isnumeric() or nameMoving[i] == ".":
+				yMoving += nameMoving[i]
+				i += 1
+			else:
+				isAPosition = False
+		
+		xMoving = ""
+		i += 2
+		isAPosition = True
+		while isAPosition:
+			if nameMoving[i].isnumeric() or nameMoving[i] == ".":
+				xMoving += nameMoving[i]
+				i += 1
+			else:
+				isAPosition = False
+
+		positionMoving = [float(xMoving), float(yMoving)]
+
+		shift = [positionRef[0]-positionMoving[0], positionRef[1]-positionMoving[1]]
+
+		return shift
+
 
 	def calculate_shift_PCC(self, imageRef1, imageRef2) -> list:
 		"""
@@ -116,7 +206,7 @@ class Stitching(ImageTreatment):
 		maxPeakShift = np.unravel_index(np.argmax(relative_shift), relative_shift.shape)
 		maxPeakAutocorr = np.unravel_index(np.argmax(autocorr), autocorr.shape)
 
-		shift = list(map(lambda i, j: i - j, maxPeakAutocorr, maxPeakShift))
+		shift = list(map(lambda i, j: j - i, maxPeakAutocorr, maxPeakShift))
 
 		if index_given:
 			if self.isMirrored:
@@ -124,7 +214,7 @@ class Stitching(ImageTreatment):
 			if self.isFlipped:
 				shift[0] *= -1
 
-		shift = [shift[1], shift[0]]
+		shift = [int(shift[1]), int(shift[0])]
 		return shift
 
 	def create_black_image(self, width=None, height=None):
@@ -142,7 +232,7 @@ class Stitching(ImageTreatment):
 	
 		return newImage
 
-	def estimate_shift(self, index:int, stitchingSide:str) -> list:
+	def estimate_shift(self, index:int, stitchingSide:str, shiftMethod:str="PCC") -> list:
 		"""
 		If the shift is too high, using the whole image to estimate the shift (which whatever method) is biased. This function uses a cropped version of the reference and the moving images to help the shift estimation, if needed. 
 		Input the index of the current image and the stitchingSide, which can be horizontal ("H") or vertical ("V").
@@ -164,8 +254,8 @@ class Stitching(ImageTreatment):
 			movingIndex = index
 
 		elif stitchingSide == "H": 
-			referenceIndex = index
-			movingIndex = index+1
+			referenceIndex = index-1
+			movingIndex = index
 
 		else:
 			raise Exception("Verify that all arguments are defined to estimate shift.")
@@ -182,13 +272,10 @@ class Stitching(ImageTreatment):
 			mbottom = 250
 
 		elif stitchingSide == "H":
-			rleft = self.imageSize[0] - 500
+			rleft = self.imageSize[0] - 900
 			rtop = 0
-			mright = 500
+			mright = 900
 			mbottom = self.imageSize[1]
-
-		else:
-			exc.define_variable(stitchingSide)
 
 		rright = self.imageSize[0]
 		rbottom = self.imageSize[1]
@@ -204,17 +291,55 @@ class Stitching(ImageTreatment):
 		lowCropMoving = self.apply_low_pass_filter(image=cropMoving)
 
 		# Estimates shift of low-passed cropped images.
-		shift = self.calculate_shift_PCC(imageRef1=lowCropReference, imageRef2=lowCropMoving)
+		if shiftMethod == "PCC":
+			shift = self.calculate_shift_PCC(imageRef1=lowCropReference, imageRef2=lowCropMoving)
+		elif shiftMethod == "FFTConvolution":
+			shift = self.calculate_shift_convolution(imageRef1=sobelLowCropReference, imageRef2=sobelLowCropMoving)
 
 		# Rescales the shift to make it correspond to the top-left coordinate (makes up for the crop).
 		if stitchingSide == "V":
 			shift[1] = shift[1] + (self.imageSize[1]-250)
 
 		if stitchingSide == "H":
-			shift[0] = shift[0] + (self.imageSize[0]-500)
+			shift[0] = shift[0] + (self.imageSize[0]-900)
 
 		return shift
+
+
+	def stitching_with_known_shifts(self):
+
+		tile = self.create_black_image()
+
+		i = 0
+
+		for y in range(self.tileD[1]): # rangées, y
+			for x in range(self.tileD[0]): # colonnes, x
+				# if first image of the row, use the image on top to calculate the shift
+				if x == 0:
+					if y == 0:
+						coordinates = self.calculate_coordinates_firstImage(background=tile)
+						vCoordinates = coordinates
+						hCoordinates = coordinates
+					else:
+						shift = self.vShift
+						coordinates = [vCoordinates[0] + shift[0], vCoordinates[1] + shift[1]]
+						hCoordinates = coordinates
+						vCoordinates = coordinates
+				# if not first image of the row, use the previous image to calcualte the shift
+				else:
+					shift = self.hShift
+					coordinates = [hCoordinates[0] + shift[0], hCoordinates[1] + shift[1]]
+					hCoordinates = coordinates
+
+				image = fman.read_file(filePath=self.directory + "/" + self.files[i], imageType="PIL", mirror=self.isMirrored, flip=self.isFlipped)
+				coords = coordinates
+				tile.paste(image, (coordinates[0], coordinates[1]))
 	
+				i += 1
+	
+		return tile
+
+
 	def stitching_scrapbooking_allImages(self):
 		""" 
 		Creates the background tile image of the right size. 
@@ -228,6 +353,9 @@ class Stitching(ImageTreatment):
 		tile = self.create_black_image()
 
 		i = 0
+		print(f"I am looking at image number {i}")
+		allVerticalShifts = []
+		allHorizontalShifts = []
 
 		for y in range(self.tileD[1]): # rangées, y
 			for x in range(self.tileD[0]): # colonnes, x
@@ -235,33 +363,33 @@ class Stitching(ImageTreatment):
 				if x == 0:
 					if y == 0:
 						coordinates = self.calculate_coordinates_firstImage(background=tile)
-						#vCoordinates = [coordinates[0], coordinates[1]]
-						#hCoordinates = [coordinates[0], coordinates[1]]
 						vCoordinates = coordinates
 						hCoordinates = coordinates
-						print(f"COOR : {vCoordinates} and {hCoordinates}")
 					else:
-						shift = self.estimate_shift(index=i, stitchingSide="V")
+						shift = self.estimate_shift(index=i, stitchingSide="V", shiftMethod=self.shiftEstimation)
+						allVerticalShifts.append(shift)
+
 						coordinates = [vCoordinates[0] + shift[0], vCoordinates[1] + shift[1]]
-						hCoordinates = [coordinates[0], coordinates[1]]
-						vCoordinates = [coordinates[0], coordinates[1]]
+						hCoordinates = coordinates
+						vCoordinates = coordinates
 				# if not first image of the row, use the previous image to calcualte the shift
 				else:
-					shift = self.calculate_shift_PCC(imageRef1=i-1, imageRef2=i)
-					print(f"shift last : {shift}")
+					shift = self.estimate_shift(index=i, stitchingSide="H", shiftMethod=self.shiftEstimation)
+					allHorizontalShifts.append(shift)
+
 					coordinates = [hCoordinates[0] + shift[0], hCoordinates[1] + shift[1]]
-					hCoordinates = [coordinates[0], coordinates[1]]
+					hCoordinates = coordinates
 
 				image = fman.read_file(filePath=self.directory + "/" + self.files[i], imageType="PIL", mirror=self.isMirrored, flip=self.isFlipped)
-				print(coordinates)
 				coords = coordinates
-				print(f"BEFORE PASTE : {coords}")
-				tile.paste(image, coordinates)
-				print(f"AFTER PASTE : {coords}")
+				tile.paste(image, (coordinates[0], coordinates[1]))
 	
 				i += 1
+
+		averageHShifts = self.average_shifts(allHorizontalShifts)
+		averageVShifts = self.average_shifts(allVerticalShifts)
 	
-		return tile
+		return tile, averageHShifts, averageVShifts
 	
 	
 
