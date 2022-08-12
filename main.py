@@ -2,7 +2,7 @@ from stitching import *
 from imageTreatment import *
 import tifffile as tiff
 
-sourcePath = "/Users/valeriepineaunoel/Library/Mobile Documents/com~apple~CloudDocs/Documents/Stitching-Scrapbooking/tests/testDataset"
+sourcePath = "/Users/valeriepineaunoel/Desktop/testImages/IntensityCorrection"
 tileDimensions = [2, 3]
 
 stitch = Stitching(sourceDir=sourcePath, tileD=tileDimensions, imageSize=[1024,512], isIntensityCorrection=False, shiftEstimation="PCC", isMirrored=True, isFlipped=False)

@@ -45,6 +45,13 @@ class ImageTreatment:
 
 		return lowImage
 
+	def apply_sobel_filter(self, image):
+		newImage = simg.sobel(image, mode="nearest")
+		#tiff.imshow(newImage)
+		#plt.show()
+
+		return newImage
+
 	def correct_intensity_envelop(self):
 		"""
 		Creates an intensity-correction image. 
@@ -52,8 +59,11 @@ class ImageTreatment:
 		Saves the images in a new directory. 
 		Returns the path of the new directory and the list of the corrected images. 
 		"""
+		print(f"Start to correct intensity on raw images.")
 		aveImage = self.create_average_image()
+		print(f"Average image is done.")
 		correctionImage = self.create_intensity_correction_image(image=aveImage)
+		print(f"Correction image is done.")
 
 		pathAfterCorrection = fman.create_new_directory(directory=self.sourceDir, newFileName="IntensityCorrection")
 		
@@ -62,6 +72,7 @@ class ImageTreatment:
 			correctedImage = self.adjust_intensity(image=image, correction=correctionImage)
 			newFileName = pathAfterCorrection + "/" + "ADJ" + file 
 			tiff.imwrite(newFileName, correctedImage)
+			print(f"Correct intensity envelope of image {file}")
 
 		correctedFiles = fman.list_name_of_files(directory=pathAfterCorrection)
 

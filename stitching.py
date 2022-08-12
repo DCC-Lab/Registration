@@ -61,6 +61,8 @@ class Stitching(ImageTreatment):
 		if self.isMirrored == True:
 			x = -x
 
+		print(f"First image coordinates done.")
+
 		return [int(x), int(y)]
 
 	def calculate_shift_PCC(self, imageRef1, imageRef2) -> list:
@@ -202,12 +204,14 @@ class Stitching(ImageTreatment):
 		# Apply a low-pass filter on the cropped images. 
 		lowCropReference = self.apply_low_pass_filter(image=cropReference)
 		lowCropMoving = self.apply_low_pass_filter(image=cropMoving)
+		sobelref = self.apply_sobel_filter(image=lowCropReference)
+		sobelmoving = self.apply_sobel_filter(image=lowCropMoving)
 
 		# Estimates shift of low-passed cropped images.
 		if shiftMethod == "PCC":
-			shift = self.calculate_shift_PCC(imageRef1=lowCropReference, imageRef2=lowCropMoving)
+			shift = self.calculate_shift_PCC(imageRef1=sobelref, imageRef2=sobelmoving)
 		elif shiftMethod == "FFTConvolution":
-			shift = self.calculate_shift_convolution(imageRef1=lowCropReference, imageRef2=lowCropMoving)
+			shift = self.calculate_shift_convolution(imageRef1=sobelLowCropReference, imageRef2=sobelLowCropMoving)
 
 		# Rescales the shift to make it correspond to the top-left coordinate (makes up for the crop).
 		if stitchingSide == "V":
@@ -231,6 +235,7 @@ class Stitching(ImageTreatment):
 		tile = self.create_black_image()
 
 		i = 0
+		print(f"I am looking at image number {i}")
 
 		for y in range(self.tileD[1]): # rangées, y
 			for x in range(self.tileD[0]): # colonnes, x
@@ -242,6 +247,7 @@ class Stitching(ImageTreatment):
 						hCoordinates = coordinates
 					else:
 						shift = self.estimate_shift(index=i, stitchingSide="V", shiftMethod=self.shiftEstimation)
+						print(f"{i} image, shift : {shift}")
 						coordinates = [vCoordinates[0] + shift[0], vCoordinates[1] + shift[1]]
 						hCoordinates = coordinates
 						vCoordinates = coordinates
