@@ -10,7 +10,7 @@ from imageTreatment import *
 #from typing import *
 
 class Stitching(ImageTreatment):
-	def __init__(self, sourceDir:str, tileD:list, imageSize:list, isIntensityCorrection:bool = True, shiftEstimation:str = "PCC", isMirrored:bool = False, isFlipped:bool = False, verticalShift:list = None, horizontalShift:list = None):
+	def __init__(self, sourceDir:str, tileD:list, imageSize:list, isIntensityCorrection:bool = True, shiftEstimation:str = "PCC", isMirrored:bool = False, isFlipped:bool = False, verticalShift:list = None, horizontalShift:list = None, knownShift:bool=False):
 		super().__init__(sourceDir=sourceDir)
 		if isIntensityCorrection:
 			# if true, the directory we are interested in is actually the one with intensity-corrected images. 
@@ -25,12 +25,24 @@ class Stitching(ImageTreatment):
 		self.isFlipped = isFlipped
 
 		# vertical (vShift) and horizontal (hShift) shifts between the first image and its neighbours.
-		if verticalShift is None and horizontalShift is None: 
+		if verticalShift is False and horizontalShift is False: 
 			self.hShift = self.calculate_shift_PCC(imageRef1=0, imageRef2=1)
 			self.vShift = self.estimate_shift(index=0, stitchingSide="V", shiftMethod=self.shiftEstimation)
-		else: 
-			self.hShift = horizontalShift
-			self.vShift = verticalShift
+		else:
+			self.hShift = self.calculate_shift_from_file_name(imageRef1=0, imageRef2=1)
+
+
+	def average_shifts(self, allShifts):
+		"""
+		Input a list of shifts [x,y] and returns the average of all the shifts element-wise. 
+		"""
+		length = len(allShifts)
+		allShifts = np.dstack(tuple(allShifts))
+		sumAllShifts = np.sum(allShifts, axis=2)
+		average = sumAllShifts/length
+		average = [int(average[0][0]), int(average[0][1])]
+
+		return average
 
 	def calculate_coordinates_firstImage(self, background):
 		"""
@@ -68,6 +80,76 @@ class Stitching(ImageTreatment):
 		print(f"First image coordinates done.")
 
 		return [int(x), int(y)]
+
+	def calculate_shift_from_file_name(self, imageRef1, imageRef2):
+		"""
+		Finds the position of the image at indexes imageRef1 and imageRef2 from their file name. 
+		Indeed, when images are acquired with Nirvana, the file name includes the position of the image. 
+		By extracting this position in x and y, it would be possible to know the exact shift between two images. 
+		Ex : 
+			file name 1 is ADJCORR20220620-334B-1A-Cryoprotectant-Ave30-tiling-zoom2-004-Bliq VMS-Ch-2-Ch 2-VOI_1-Slice_180-X001-Y180-Z001-(X11465.31-Y5069.28-Z4374.00)-Time_238.163s-Frame_007260-Projection_Average.tif
+			The index 112 is the parenthesis where the information related to the image position starts (X11465.31-Y5069.28-Z4374.00).
+			file name 2 is ADJCORR20220620-334B-1A-Cryoprotectant-Ave30-tiling-zoom2-004-Bliq VMS-Ch-2-Ch 2-VOI_1-Slice_181-X001-Y181-Z001-(X11465.31-Y5094.52-Z4374.00)-Time_239.347s-Frame_007297-Projection_Average.tif
+			The index 112 is the parenthesis where the information related to the image position starts (X11465.31-Y5094.52-Z4374.00).
+			Use this information to know the shift between image 1 and 2 (0, -25.24). 
+		We know that the X- and Y-axis are inversed, so X is actually Y and vice versa. 
+		"""
+		npimage1 = fman.read_file(filePath=self.directory + "/" + self.files[imageRef1], imageType="numpy")
+		npimage2 = fman.read_file(filePath=self.directory + "/" + self.files[imageRef2], imageType="numpy")
+
+		nameRef = self.files[imageRef1]
+		nameMoving = self.files[imageRef2]
+
+		stringIndexRef = nameRef.find("(X") # should be 112 with ADJ
+		yRef = ""
+		i = stringIndexRef + 2
+		isAPosition = True
+		while isAPosition:
+			if nameRef[i].isnumeric() or nameRef[i] == ".":
+				yRef += nameRef[i]
+				i += 1
+			else:
+				isAPosition = False
+		
+		xRef = ""
+		i += 2
+		isAPosition = True
+		while isAPosition:
+			if nameRef[i].isnumeric() or nameRef[i] == ".":
+				xRef += nameRef[i]
+				i += 1
+			else:
+				isAPosition = False
+
+		positionRef = [float(xRef), float(yRef)]
+
+		stringIndexMoving = nameMoving.find("(X") # should be 112 with ADJ
+		yMoving = ""
+		i = stringIndexMoving + 2
+		isAPosition = True
+		while isAPosition:
+			if nameMoving[i].isnumeric() or nameMoving[i] == ".":
+				yMoving += nameMoving[i]
+				i += 1
+			else:
+				isAPosition = False
+		
+		xMoving = ""
+		i += 2
+		isAPosition = True
+		while isAPosition:
+			if nameMoving[i].isnumeric() or nameMoving[i] == ".":
+				xMoving += nameMoving[i]
+				i += 1
+			else:
+				isAPosition = False
+
+		positionMoving = [float(xMoving), float(yMoving)]
+
+		shift = [positionRef[0]-positionMoving[0], positionRef[1]-positionMoving[1]]
+
+		return shift
+
 
 	def calculate_shift_PCC(self, imageRef1, imageRef2) -> list:
 		"""
@@ -223,18 +305,7 @@ class Stitching(ImageTreatment):
 
 		return shift
 
-	def average_shifts(self, allShifts):
-		"""
-		Input a list of shifts [x,y] and returns the average of all the shifts element-wise. 
-		"""
-		length = len(allShifts)
-		allShifts = np.dstack(tuple(allShifts))
-		sumAllShifts = np.sum(allShifts, axis=2)
-		average = sumAllShifts/length
-		average = [int(average[0][0]), int(average[0][1])]
 
-		return average
-	
 	def stitching_with_known_shifts(self):
 
 		tile = self.create_black_image()
