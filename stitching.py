@@ -4,6 +4,7 @@ import numpy as np
 from skimage.registration import phase_cross_correlation
 import tifffile as tiff
 from scipy.signal import fftconvolve
+from tqdm import tqdm
 
 import filesManagement as fman
 from imageTreatment import *
@@ -25,7 +26,7 @@ class Stitching(ImageTreatment):
 
 		# vertical (vShift) and horizontal (hShift) shifts between the first image and its neighbours.
 		if shift is None:
-			shiftMethod = input("Which stitching method do you want to use (Answer 1, 2, 3 or 4): \r 1. Estimate the shift with phase cross-correlation. \n 2. Estimate the shift with FFT convolution \n 3. Use the position in the file name. \n 4. Use a predefined shift.")
+			shiftMethod = input("Which stitching method do you want to use (Answer 1, 2, 3 or 4): \n 1. Estimate the shift with phase cross-correlation. \n 2. Estimate the shift with FFT convolution \n 3. Use the position in the file name. \n 4. Use a predefined shift.")
 			if shiftMethod == "1":
 				self.hShift = self.calculate_shift_PCC(imageRef1=0, imageRef2=1)
 				self.vShift = self.estimate_shift(index=0, stitchingSide="V", shiftMethod="PCC")
@@ -376,7 +377,8 @@ class Stitching(ImageTreatment):
 
 		i = 0
 
-		for y in range(self.tileD[1]): # rangées, y
+		print("Stitching images with positions in file name.")
+		for y in tqdm(range(self.tileD[1])): # rangées, y
 			for x in range(self.tileD[0]): # colonnes, x
 				# if first image of the row, use the image on top to calculate the shift
 				if x == 0:
@@ -420,7 +422,8 @@ class Stitching(ImageTreatment):
 
 		i = 0
 
-		for y in range(self.tileD[1]): # rangées, y
+		print("Stitching images with known shift.")
+		for y in tqdm(range(self.tileD[1])): # rangées, y
 			for x in range(self.tileD[0]): # colonnes, x
 				# if first image of the row, use the image on top to calculate the shift
 				if x == 0:
@@ -466,7 +469,8 @@ class Stitching(ImageTreatment):
 		allVerticalShifts = []
 		allHorizontalShifts = []
 
-		for y in range(self.tileD[1]): # rangées, y
+		print("Stitching images with shift estimation.")
+		for y in tqdm(range(self.tileD[1])): # rangées, y
 			for x in range(self.tileD[0]): # colonnes, x
 				# if first image of the row, use the image on top to calculate the shift
 				if x == 0:
