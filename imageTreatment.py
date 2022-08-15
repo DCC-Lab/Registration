@@ -4,6 +4,7 @@ import scipy.ndimage as simg
 import tifffile as tiff
 import math as math
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 
 class ImageTreatment:
 	def __init__(self, sourceDir:str):
@@ -67,7 +68,8 @@ class ImageTreatment:
 
 		pathAfterCorrection = fman.create_new_directory(directory=self.sourceDir, newFileName="IntensityCorrection")
 		
-		for file in self.files:
+		print("Apply correction image on all images.")
+		for file in tqdm(self.files):
 			image = fman.read_file(filePath=self.sourceDir + "/" + file, imageType="numpy")
 			correctedImage = self.adjust_intensity(image=image, correction=correctionImage)
 			newFileName = pathAfterCorrection + "/" + "ADJ" + file 
@@ -183,7 +185,7 @@ class ImageTreatment:
 		Returns an image with the sum of all pixels. 
 		"""
 		allImages = []
-		for name in self.files:
+		for name in tqdm(self.files):
 			image = fman.read_file(filePath=self.sourceDir + "/" + name, imageType="numpy")
 			allImages.append(image)	
 		allImages = np.dstack(tuple(allImages))

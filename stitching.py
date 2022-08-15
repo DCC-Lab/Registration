@@ -4,6 +4,7 @@ import numpy as np
 from skimage.registration import phase_cross_correlation
 import tifffile as tiff
 from scipy.signal import fftconvolve
+from tqdm import tqdm
 
 import filesManagement as fman
 from imageTreatment import *
@@ -376,7 +377,8 @@ class Stitching(ImageTreatment):
 
 		i = 0
 
-		for y in range(self.tileD[1]): # rangées, y
+		print("Stitching images.")
+		for y in tqdm(range(self.tileD[1])): # rangées, y
 			for x in range(self.tileD[0]): # colonnes, x
 				# if first image of the row, use the image on top to calculate the shift
 				if x == 0:
@@ -420,7 +422,8 @@ class Stitching(ImageTreatment):
 
 		i = 0
 
-		for y in range(self.tileD[1]): # rangées, y
+		print("Stitching images.")
+		for y in tqdm(range(self.tileD[1])): # rangées, y
 			for x in range(self.tileD[0]): # colonnes, x
 				# if first image of the row, use the image on top to calculate the shift
 				if x == 0:
@@ -466,7 +469,8 @@ class Stitching(ImageTreatment):
 		allVerticalShifts = []
 		allHorizontalShifts = []
 
-		for y in range(self.tileD[1]): # rangées, y
+		print("Stitching images.")
+		for y in tqdm(range(self.tileD[1])): # rangées, y
 			for x in range(self.tileD[0]): # colonnes, x
 				# if first image of the row, use the image on top to calculate the shift
 				if x == 0:
