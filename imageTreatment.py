@@ -12,6 +12,9 @@ class ImageTreatment:
 
 		self.files = fman.list_name_of_files(directory=sourceDir)
 
+		image = fman.read_file(filePath=self.sourceDir + "/" + self.files[0], imageType="numpy")
+		self.imageShape = image.shape
+
 	def adjust_intensity(self, image, correction, threshold:int=20):
 		""" 
 		Takes an image and multiplies each pixels by the corresponding pixel in the correction image. 
@@ -60,14 +63,14 @@ class ImageTreatment:
 		Saves the images in a new directory. 
 		Returns the path of the new directory and the list of the corrected images. 
 		"""
-		print(f"Start to correct intensity on raw images.")
+		print(f"Start to correct intensity on raw images. \n Averaging all images.")
 		aveImage = self.create_average_image()
-		print(f"Average image is done.")
+		print(f"Creating correction image.")
 		correctionImage = self.create_intensity_correction_image(image=aveImage)
 		print(f"Correction image is done.")
 
 		pathAfterCorrection = fman.create_new_directory(directory=self.sourceDir, newFileName="IntensityCorrection")
-		
+
 		print("Apply correction image on all images.")
 		for file in tqdm(self.files):
 			image = fman.read_file(filePath=self.sourceDir + "/" + file, imageType="numpy")
@@ -184,12 +187,10 @@ class ImageTreatment:
 		Reads all images in directory and sums the value of each pixels. 
 		Returns an image with the sum of all pixels. 
 		"""
-		allImages = []
+		sumImage = np.zeros(shape=self.imageShape)
 		for name in tqdm(self.files):
 			image = fman.read_file(filePath=self.sourceDir + "/" + name, imageType="numpy")
-			allImages.append(image)	
-		allImages = np.dstack(tuple(allImages))
-		sumImage = np.sum(allImages, axis=2)
+			sumImage += image
 
 		return sumImage
 
