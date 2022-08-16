@@ -39,7 +39,7 @@ class Stitching(ImageTreatment):
 				self.save_image(image)
 			elif shiftMethod == "3":
 				self.hShift = self.calculate_shift_from_file_name(imageRef1=0, imageRef2=1)
-				self.vShift = self.calculate_shift_from_file_name(imageRef1=0, imageRef2=self.tileD[0]+1)
+				self.vShift = self.calculate_shift_from_file_name(imageRef1=0, imageRef2=self.tileD[0])
 				image = self.stitch_with_position_in_file_name()
 				self.save_image(image)
 			elif shiftMethod == "4":
@@ -63,7 +63,7 @@ class Stitching(ImageTreatment):
 				self.save_image(image)
 			elif shiftMethod == "FileName":
 				self.hShift = self.calculate_shift_from_file_name(imageRef1=0, imageRef2=1)
-				self.vShift = self.calculate_shift_from_file_name(imageRef1=0, imageRef2=self.tileD[0]+1)
+				self.vShift = self.calculate_shift_from_file_name(imageRef1=0, imageRef2=self.tileD[0])
 				image = self.stitch_with_position_in_file_name()
 				self.save_image(image)
 			elif shiftMethod == "Manual":
@@ -126,7 +126,6 @@ class Stitching(ImageTreatment):
 
 	def calculate_shift_from_file_name(self, imageRef1, imageRef2):
 		"""
-		TODO : USE THIS AS A WAY TO ACTUALLY STITCH THE STUFF
 		Finds the position of the image at indexes imageRef1 and imageRef2 from their file name. 
 		Indeed, when images are acquired with Nirvana, the file name includes the position of the image. 
 		By extracting this position in x and y, it would be possible to know the exact shift between two images. 
@@ -190,7 +189,9 @@ class Stitching(ImageTreatment):
 
 		positionMoving = [float(xMoving), float(yMoving)]
 
-		if self.isMirrored:
+		if self.isMirrored and self.isFlipped:
+			shift = [-int(positionRef[0]-positionMoving[0]), -int(positionRef[1]-positionMoving[1])]
+		elif self.isMirrored:
 			shift = [-int(positionRef[0]-positionMoving[0]), int(positionRef[1]-positionMoving[1])]
 		else:
 			shift = [int(positionRef[0]-positionMoving[0]), int(positionRef[1]-positionMoving[1])]
