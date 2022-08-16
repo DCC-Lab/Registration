@@ -39,7 +39,8 @@ class Stitching(ImageTreatment):
 				self.save_image(image)
 			elif shiftMethod == "3":
 				self.hShift = self.calculate_shift_from_file_name(imageRef1=0, imageRef2=1)
-				self.vShift = self.calculate_shift_from_file_name(imageRef1=0, imageRef2=self.tileD[0])
+				#self.vShift = self.calculate_shift_from_file_name(imageRef1=0, imageRef2=self.tileD[0])
+				self.vShift = [0,0]
 				image = self.stitch_with_position_in_file_name()
 				self.save_image(image)
 			elif shiftMethod == "4":
@@ -195,6 +196,11 @@ class Stitching(ImageTreatment):
 			shift = [-int(positionRef[0]-positionMoving[0]), int(positionRef[1]-positionMoving[1])]
 		else:
 			shift = [int(positionRef[0]-positionMoving[0]), int(positionRef[1]-positionMoving[1])]
+
+		if shift[0] > 30:
+			raise Exception(f"x-shift weird here. {shift[0]}")
+		elif shift[1] > 60:
+			raise Exception(f"y-shift werid here. {shift[1]}")
 
 		return shift
 
