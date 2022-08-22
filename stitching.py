@@ -30,12 +30,12 @@ class Stitching(ImageTreatment):
 			if shiftMethod == "1":
 				self.hShift = self.calculate_shift_PCC(imageRef1=0, imageRef2=1)
 				self.vShift = self.estimate_shift(index=0, stitchingSide="V", shiftMethod="PCC")
-				image = self.stitch_with_estimated_shift(shiftMethod="PCC")
+				image, averageH, averageV = self.stitch_with_estimated_shift(shiftMethod="PCC")
 				self.save_image(image)
 			elif shiftMethod == "2":
 				self.hShift = self.calculate_shift_convolution(imageRef1=0, imageRef2=1)
 				self.vShift = self.estimate_shift(index=0, stitchingSide="V", shiftMethod="FFTConvolution")
-				image = self.stitch_with_estimated_shift(shiftMethod="FFTConvolution")
+				image, averageH, averageV = self.stitch_with_estimated_shift(shiftMethod="FFTConvolution")
 				self.save_image(image)
 			elif shiftMethod == "3":
 				self.hShift = self.calculate_shift_from_file_name(imageRef1=0, imageRef2=1)
@@ -55,12 +55,12 @@ class Stitching(ImageTreatment):
 			if shift == "PCC":
 				self.hShift = self.calculate_shift_PCC(imageRef1=0, imageRef2=1)
 				self.vShift = self.estimate_shift(index=0, stitchingSide="V", shiftMethod="PCC")
-				image = self.stitch_with_estimated_shift(shiftMethod="PCC")
+				image, averageH, averageV = self.stitch_with_estimated_shift(shiftMethod="PCC")
 				self.save_image(image)
 			elif shiftMethod == "FFTConvolution":
 				self.hShift = self.calculate_shift_convolution(imageRef1=0, imageRef2=1)
 				self.vShift = self.estimate_shift(index=0, stitchingSide="V", shiftMethod="FFTConvolution")
-				image = self.stitch_with_estimated_shift(shiftMethod="FFTConvolution")
+				image, averageH, averageV = self.stitch_with_estimated_shift(shiftMethod="FFTConvolution")
 				self.save_image(image)
 			elif shiftMethod == "FileName":
 				self.hShift = self.calculate_shift_from_file_name(imageRef1=0, imageRef2=1)
