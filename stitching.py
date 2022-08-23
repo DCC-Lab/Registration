@@ -40,7 +40,7 @@ class Stitching(ImageTreatment):
 			elif shiftMethod == "3":
 				self.hShift = self.calculate_shift_from_file_name(imageRef1=0, imageRef2=1)
 				#self.vShift = self.calculate_shift_from_file_name(imageRef1=0, imageRef2=self.tileD[0])
-				self.vShift = [0,0]
+				self.vShift = self.calculate_shift_from_file_name(imageRef1=0, imageRef2=self.tileD[0])
 				image = self.stitch_with_position_in_file_name()
 				self.save_image(image)
 			elif shiftMethod == "4":
